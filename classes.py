@@ -131,6 +131,8 @@ class Chat:
 
 # region Message
 class Message:
+    def check(self):
+        print("test11111")
     def __init__(self, client, chatId: str, sender: str, id, time, text, type, _f=0, **kwargs):
         """
         Represents a message in a chat.
@@ -159,6 +161,7 @@ class Message:
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None
+        self.check()
     
     # region reply()
     def reply(self, text: str, **kwargs) -> "Message":

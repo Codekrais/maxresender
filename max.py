@@ -240,7 +240,7 @@ class MaxClient:
                 self._connected = False
                 time.sleep(5)
                 continue
-
+            print(f'[{self.current_time()}]\nПРИНЯТЫЙ ПАКЕТ ОТ MAX\n {json.dumps(recv, ensure_ascii=False, indent=4)}\n')
             opcode = recv.get("opcode")
             payload = recv.get("payload")
             match opcode:
@@ -259,14 +259,12 @@ class MaxClient:
                     check_attaches = False
                     if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
                         check_attaches = True
-
                     if not check_attaches:
                         msg = Message(self, payload["chatId"], **payload["message"])
                         self._hlprocessor(msg)
 
                 case _:
                     pass
-            print(f'[{self.current_time()}]\nПРИНЯТЫЙ ПАКЕТ ОТ MAX\n {json.dumps(recv, ensure_ascii=False, indent=4)}\n')
 
     # region run()
     def run(self):

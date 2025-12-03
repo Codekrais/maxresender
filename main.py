@@ -73,8 +73,8 @@ def onmessage(client: Client, message: Message):
                     print(f"type={message.type} fileid={message.fileid} url{message.url}")
 
 
-
-client.run()
+if __name__ == "__main__":
+    client.run()
 
 
 
