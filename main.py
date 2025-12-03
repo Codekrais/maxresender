@@ -4,8 +4,6 @@ from classes import Message
 from telegram import send_to_telegram
 import time, os
 from dotenv import load_dotenv
-import statusbot
-from threading import Thread
 
 
 load_dotenv()

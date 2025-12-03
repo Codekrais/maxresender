@@ -111,9 +111,9 @@ class Chat:
         payload = recv["payload"]
         if not recv["opcode"] in [150]:
             _ = []
-            for msg in payload["messages"]:
-                m = Message(client, 0, **msg, _f=1)
-                _.append(m)
+            msg = payload["messages"][0]
+            m = Message(client, 0, **msg, _f=1)
+            _.append(m)
             self.messages: list[Message] = _
 
     # region pin()
@@ -156,7 +156,7 @@ class Message:
         self.cid = kwargs.get("cid")
         self.attaches = kwargs.get("attaches", [])
         self.reaction_info = kwargs.get("reactionInfo", {})
-        self.user: User = client.get_user(id=sender, _f=1)
+        self.user = client.get_user(id=sender, _f=1)
         self.chatname = client.get_chats(chatId)
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
