@@ -7,16 +7,17 @@ token = os.getenv("TG_BOT_TOKEN")
 bot = telebot.TeleBot(token)
 
 def poll():
-    while True:
+    @bot.message_handler(commands=['f'])
+    def wc(message):
         try:
-            @bot.message_handler(commands=['f'])
-            def wc(message):
-                bot.send_message(message.chat.id, 'Бот активен')
+            bot.send_message(message.chat.id, 'Бот активен')
+        except Exception as e: print(f"Ошибка: {e}")
 
-            @bot.message_handler(commands=['start'])
-            def wc(message):
-                bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
-                
+    @bot.message_handler(commands=['start'])
+    def wc(message):
+        try:
+            bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
+        
 Бот, пересылающий сообщения из мессенджера MAX в телеграм
 
 Бот работает на базе API мессенджера MAX и отправки запросов .json файлом по WEBSOCKETS. Написан на языке PYTHON
@@ -26,11 +27,12 @@ def poll():
 Разработчик текущей версии: <i>@endurra</i>
 
 Процесс разработки и полезная информация: <i>@codebykrais</i>
-                    ''', parse_mode='HTML')
-        except: pass
+            ''', parse_mode='HTML')
+        except Exception as e: print(f"Ошибка: {e}")
 
-        while True:
-            try:
-                bot.polling(non_stop=True)
-            except:
-                break
+    while True:
+        try:
+            bot.polling(non_stop=True)
+        except Exception as e:
+            print(f"Ошибка: {e}")
+            pass
