@@ -255,7 +255,7 @@ class MaxClient:
                     }))
                     self.websocket.recv()
 
-                case 128:
+                case 128 | 64:
                     check_attaches = False
                     if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
                         check_attaches = True
@@ -475,19 +475,6 @@ class MaxClient:
             }
 
         self.websocket.send(json.dumps(j))
-        while True:
-            recv = json.loads(self.websocket.recv())
-            if recv["seq"] != seq:
-                pass
-            else:
-                break
-        payload = recv["payload"]
-        try:
-            msg = Message(self, payload["chatId"], **payload["message"])
-        
-            return msg
-        except:
-            raise
 
     # region delete_message()
     def delete_message(self, chat_id: int, message_ids: list[str], for_me: bool = False):
