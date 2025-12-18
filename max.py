@@ -142,7 +142,6 @@ class MaxClient:
         }))
 
         p = json.loads(self.websocket.recv())['payload']
-        print(p)
         usr = User(self, p['profile']["contact"])
         self.me = usr
         self._connected = True
