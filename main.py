@@ -68,7 +68,6 @@ def onmessage(client: Client, message: Message):
                         TG_CHAT_ID,
                         f"<b>Из чата \"{message.chatname}\"</b>:\n\n<b>{name}</b> {forward if link else not_forward}\n\n{msg_text if msg_text != "" else ''}{f'Файл по ссылке: {message.url}'if message.url else ''}",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach], type=message._type, file_url=message.url)
-                    print(f"type={message.type} fileid={message.fileid} url{message.url}")
 
 
 if __name__ == "__main__":
