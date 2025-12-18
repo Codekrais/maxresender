@@ -105,12 +105,14 @@ def status_bot():
             if str(message.from_user.id) == TG_ADMIN_ID: #Проверка по id
 
                 argument_list = message.text.split(" ")
-                message_body = " ".join(argument_list[1::]) #Текст после /send
+                max_chat_id = argument_list[1]
+                print(max_chat_id, type(max_chat_id))
+                message_body = " ".join(argument_list[2::]) #Текст после /send
 
-                if message_body: #Если текст не пустой
-                    recv = client.send_message(chat_id=int(MAX_CHAT_IDS[0]), text=message_body) #Отправка сообщения
-                else: bot.send_message(message.chat.id, "Вы не ввели сообщение после /send")#Если текст пустой
-
+                if message_body and max_chat_id: #Если текст не пустой
+                    recv = client.send_message(chat_id=int(max_chat_id), text=message_body) #Отправка сообщения
+                    bot.send_message(message.chat.id, recv)
+                else: bot.send_message(message.chat.id, "Вы не ввели id или сообщение после /send")#Если текст пустой
             else: bot.send_message(message.chat.id, "Вы не можете воспользоваться данной командой!")#Если id не совпал
 
         except Exception as e: #Except общего обработчика

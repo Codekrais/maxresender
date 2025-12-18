@@ -255,14 +255,23 @@ class MaxClient:
                     }))
                     self.websocket.recv()
 
-                case 128 | 64:
+                case 128:
                     check_attaches = False
                     if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
                         check_attaches = True
                     if not check_attaches:
                         msg = Message(self, payload["chatId"], **payload["message"])
                         self._hlprocessor(msg)
-
+                case 64:
+                    if payload.get("error"):
+                        pass
+                    else:
+                        check_attaches = False
+                        if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
+                            check_attaches = True
+                        if not check_attaches:
+                            msg = Message(self, payload["chatId"], **payload["message"])
+                            self._hlprocessor(msg)
                 case _:
                     pass
 
@@ -475,6 +484,7 @@ class MaxClient:
             }
 
         self.websocket.send(json.dumps(j))
+        return "Сообщение было отправлено!"
 
     # region delete_message()
     def delete_message(self, chat_id: int, message_ids: list[str], for_me: bool = False):

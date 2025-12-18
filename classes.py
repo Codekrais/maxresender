@@ -156,7 +156,7 @@ class Message:
         self.attaches = kwargs.get("attaches", [])
         self.reaction_info = kwargs.get("reactionInfo", {})
         self.user = client.get_user(id=sender, _f=1)
-        self.chatname = client.get_chats(chatId)
+        self.chatname = client.get_chats(chatId) if chatId else None
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None
