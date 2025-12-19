@@ -1,5 +1,6 @@
 import json, time
 from typing import Literal
+from pprint import pprint
 EMOJIS = Literal[
     '❤️','👍','🤣','🔥','💯','😍','🎉','⚡',
     '🤩','🤘','😎','🙄','😐','😁','🤪','😉',
@@ -111,7 +112,7 @@ class Chat:
         payload = recv["payload"]
         if not recv["opcode"] in [150]:
             _ = []
-            msg = payload["messages"][0]
+            msg = payload["messages"][-1]
             m = Message(client, 0, **msg, _f=1)
             _.append(m)
             self.messages: list[Message] = _
@@ -156,7 +157,7 @@ class Message:
         self.attaches = kwargs.get("attaches", [])
         self.reaction_info = kwargs.get("reactionInfo", {})
         self.user = client.get_user(id=sender, _f=1)
-        self.chatname = client.get_chats(chatId) if chatId else None
+        self.chatname = client.get_chats(chatId) if chatId else ""
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None

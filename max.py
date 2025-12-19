@@ -86,7 +86,7 @@ class MaxClient:
                     "deviceName": "Firefox",
                     "headerUserAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
                     "deviceLocale": "en",
-                    "appVersion": "4.8.42",
+                    "appVersion": "25.12.1",
                     "screen": "1920x1080 1.0x",
                     "timezone": "UTC"
                 },
@@ -142,7 +142,7 @@ class MaxClient:
         }))
 
         p = json.loads(self.websocket.recv())['payload']
-        usr = User(self, p['profile'])
+        usr = User(self, p['profile']["contact"])
         self.me = usr
         self._connected = True
 
@@ -413,7 +413,7 @@ class MaxClient:
         self.me = usr
         return self.me
 
-    def get_chats(self,id:int):
+    def get_chats(self,id:int) -> str:
         self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
@@ -424,9 +424,10 @@ class MaxClient:
             }
         }))
         recv = json.loads(self.websocket.recv())
-        try:
-            chatname = recv.get('payload').get('chats')[0].get('title')
-        except: chatname = None
+        title = recv.get('payload').get('chats')[0].get('title')
+        if title:
+            chatname = title
+        else: chatname = ""
         return chatname
 
     # region send_message()
