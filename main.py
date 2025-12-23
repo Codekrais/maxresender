@@ -102,7 +102,7 @@ def status_bot():
     @bot.message_handler(commands=['status'])
     def status(message):
         try:
-            bot.send_message(message.chat, 'Бот активен✅️')
+            bot.send_message(message.chat.id, 'Бот активен✅️')
         except Exception as e:
             bot.send_message(message.chat.id, f"Ошибка: {e}❌")
     @bot.message_handler(commands=['start'])
