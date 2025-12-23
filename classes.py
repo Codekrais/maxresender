@@ -11,7 +11,7 @@ EMOJIS = Literal[
     '🗿','👀','👁️','🖤','❤️‍🩹','🛑','⛄','❓',
     '❗️'
 ]
-
+chatlist = set()
 # region Name
 class Name:
     def __init__(self, name='', firstName='', lastName='', type=''):
@@ -112,10 +112,13 @@ class Chat:
         payload = recv["payload"]
         if not recv["opcode"] in [150]:
             _ = []
-            msg = payload["messages"][-1]
-            m = Message(client, 0, **msg, _f=1)
-            _.append(m)
-            self.messages: list[Message] = _
+            try:
+                msg = payload["messages"][-1]
+                m = Message(client, 0, **msg, _f=1)
+                _.append(m)
+                self.messages: list[Message] = _
+            except IndexError:
+                pass
 
     # region pin()
     def pin(self):
@@ -161,6 +164,7 @@ class Message:
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None
+        #chatlist.add(f"{self.chatname if self.chatname else self.user.contact.names[0].first_name +" "+self.user.contact.names[0].last_name} : {chatId}") это к функции lschat
     
     # region reply()
     def reply(self, text: str, **kwargs) -> "Message":

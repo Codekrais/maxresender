@@ -1,6 +1,6 @@
 from max import MaxClient as Client
 from filters import filters
-from classes import Message
+from classes import Message, chatlist
 from telegram import send_to_telegram
 import time, os
 from dotenv import load_dotenv
@@ -14,7 +14,7 @@ MAX_CHAT_IDS = [int(x) for x in os.getenv("MAX_CHAT_IDS").split(",")]
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
-TG_ADMIN_ID = os.getenv("TG_ADMIN_ID")
+TG_ADMIN_ID = [x for x in os.getenv("TG_ADMIN_ID").split(",")]
 bot = telebot.TeleBot(TG_BOT_TOKEN)
 
 
@@ -35,7 +35,7 @@ def onconnect():
 def onmessage(client: Client, message: Message):
     forward = None
     link = False
-    if message.chat.id in MAX_CHAT_IDS:
+    if message.chat.id in MAX_CHAT_IDS: #Если добавить not, то тогда парсер будет исключать чат-id из списка тех, которые он парсит
         msg_text = message.text
         msg_attaches = message.attaches
         name = message.user.contact.names[0].first_name + ' ' + message.user.contact.names[0].last_name
@@ -74,49 +74,98 @@ def onmessage(client: Client, message: Message):
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach], type=message._type, file_url=message.url)
 
 def status_bot():
-    @bot.message_handler(commands=['f'])
+    #---Обработчики--
+    def errorHandler(func):
+        def wrapper(message):
+            try:
+                func(message)
+            except Exception as e:
+                bot.send_message(message.chat.id, f"Ошибка: {e}❌")
+        return wrapper
+
+    def isAdmin(func):
+        def wrapper(message):
+            global TG_ADMIN_ID
+            if str(message.from_user.id) in TG_ADMIN_ID:
+                func(message)
+            else:
+                bot.send_message(message.chat.id, "Вы не можете воспользоваться данной командой!❌")
+        return wrapper
+    def fstub(func): #заглушка
+        def wrapper(message):
+            if 1 == 1:
+                bot.send_message(message.chat.id, f"Функция на стадии разработки⏳")
+        return wrapper
+
+    #---Конец обработчиков---
+
+    @bot.message_handler(commands=['status'])
     def status(message):
         try:
-            bot.send_message(message.chat.id, 'Бот активен')
+            bot.send_message(message.chat, 'Бот активен✅️')
         except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка: {e}")
-
+            bot.send_message(message.chat.id, f"Ошибка: {e}❌")
     @bot.message_handler(commands=['start'])
+    @errorHandler
     def start(message):
-        try:
-            bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
+        bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
 
 Бот, пересылающий сообщения из мессенджера MAX в телеграм
 
 Бот работает на базе API мессенджера MAX и отправки запросов .json файлом по WEBSOCKETS. Написан на языке PYTHON
 
-<U>Версия: 0.4 beta от 3.12.25</U>
+<U>Версия: 0.5 beta от 23.12.25</U>
+
+Чтобы увидеть список команд,
+введите /com
 
 Разработчик текущей версии: <i>@endurra</i>
 
 Процесс разработки и полезная информация: <i>@codebykrais</i>
             ''', parse_mode='HTML')
-        except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка: {e}")
 
     @bot.message_handler(commands=['send'])
+    @errorHandler
+    @fstub
+    @isAdmin
     def send(message):
-        try: #Общий обработчки ошибок
-            if str(message.from_user.id) == TG_ADMIN_ID: #Проверка по id
+        argument_list = message.text.split(" ") #Парсинг сообщения
+        if len(argument_list) < 3:
+            bot.send_message(message.chat.id, "Вы не ввели id или сообщение после /send❌")  # Если текст пустой
+        else:
+            max_chat_id = argument_list[1]
+            message_body = " ".join(argument_list[2::])  # Текст после /send
 
-                argument_list = message.text.split(" ")
-                max_chat_id = argument_list[1]
-                print(max_chat_id, type(max_chat_id))
-                message_body = " ".join(argument_list[2::]) #Текст после /send
-
-                if message_body and max_chat_id: #Если текст не пустой
+            match int(max_chat_id):
+                case 0:
+                    bot.send_message(message.chat.id, "Отправка сообщения в этот чат невозможна!❌")
+                case _:
                     recv = client.send_message(chat_id=int(max_chat_id), text=message_body) #Отправка сообщения
                     bot.send_message(message.chat.id, recv)
-                else: bot.send_message(message.chat.id, "Вы не ввели id или сообщение после /send")#Если текст пустой
-            else: bot.send_message(message.chat.id, "Вы не можете воспользоваться данной командой!")#Если id не совпал
 
-        except Exception as e: #Except общего обработчика
-            bot.send_message(message.chat.id, f"Ошибка: {e}")
+    @bot.message_handler(commands=['com'])
+    @errorHandler
+    def com(message):
+        bot.send_message(message.chat.id, """
+/start - стартовое сообщение
+
+/status - статус бота
+
+/send {чат-id чата из MAX} {Сообщение (только текст)} - ДОСТУПНО ТОЛЬКО АДМИНАМ (привилегированная функция) отправить сообщение в чат MAX по чат-id (заглушена)
+
+/com - список команд
+
+/lschat - список обработанных чатов (заглушена)
+        """)
+
+    @bot.message_handler(commands=['lschat'])
+    @errorHandler
+    @fstub
+    def ls(message):
+        ls = "\n".join(chatlist)
+        if ls:
+            bot.send_message(message.chat.id,f"Список обработанных чатов:\n{ls}")
+        else: bot.send_message(message.chat.id,f"Список обработанных пуст!")
 
     while True:
         try:

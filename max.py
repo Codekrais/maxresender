@@ -417,13 +417,18 @@ class MaxClient:
         self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
-            "seq": self.seq,
+            "seq": self._seq,
             "opcode": 48,
             "payload": {
                 'chatIds': [id]
             }
         }))
-        recv = json.loads(self.websocket.recv())
+        while True:
+            recv = json.loads(self.websocket.recv())
+            if recv["seq"] != self.seq:
+                pass
+            else:
+                break
         title = recv.get('payload').get('chats')[0].get('title')
         if title:
             chatname = title
@@ -431,7 +436,7 @@ class MaxClient:
         return chatname
 
     # region send_message()
-    def send_message(self, chat_id: int, text: str, reply_id: str|int = None, notify: bool = True):
+    def send_message(self, chat_id: int, text: str, reply_id: str|int = None, notify: bool = True) -> str:
         """
         Sends a text message to a specified chat.
 
@@ -485,7 +490,7 @@ class MaxClient:
             }
 
         self.websocket.send(json.dumps(j))
-        return "Сообщение было отправлено!"
+        return "Сообщение было отправлено!✅"
 
     # region delete_message()
     def delete_message(self, chat_id: int, message_ids: list[str], for_me: bool = False):
@@ -657,7 +662,6 @@ class MaxClient:
             j = {"ver":11,"cmd":0,"seq":seq,"opcode":32,"payload":{"contactIds":[id]}}
         else:
             raise ValueError("no `id` or `phone` or `chat_id` provided")
-        
         self.websocket.send(json.dumps(j))
 
         while True:
