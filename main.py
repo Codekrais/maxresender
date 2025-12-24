@@ -5,6 +5,7 @@ from telegram import send_to_telegram
 import time, os
 from dotenv import load_dotenv
 import telebot
+import threading
 import os
 
 
@@ -100,11 +101,10 @@ def status_bot():
     #---Конец обработчиков---
 
     @bot.message_handler(commands=['status'])
+    @errorHandler
     def status(message):
-        try:
-            bot.send_message(message.chat.id, 'Бот активен✅️')
-        except Exception as e:
-            bot.send_message(message.chat.id, f"Ошибка: {e}❌")
+        bot.send_message(message.chat.id, 'Бот активен✅️')
+
     @bot.message_handler(commands=['start'])
     @errorHandler
     def start(message):
@@ -171,13 +171,14 @@ def status_bot():
         try:
             bot.polling(non_stop=True)
         except:
-            print("Ошибка")
+            print("Ошибка статус-бота")
+            time.sleep(10)
             pass
 
 
 if __name__ == "__main__":
     client.run()
-    status_bot()
+    threading.Thread(target=status_bot, daemon=True).start()
 
 
 
