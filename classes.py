@@ -158,12 +158,13 @@ class Message:
         self.options = kwargs.get("options")
         self.cid = kwargs.get("cid")
         self.attaches = kwargs.get("attaches", [])
+        self.attaches_forward = self.kwargs.get("link",{}).get("message",{}).get("attaches",[])
         self.reaction_info = kwargs.get("reactionInfo", {})
         self.user = client.get_user(id=sender, _f=1)
         self.chatname = client.get_chats(chatId) if chatId else ""
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
-        self.fileid_forward = self.kwargs.get("link").get("message").get("attaches")[0].get("fileId") if self.kwargs.get("link") else None
+        self.fileid_forward = self.attaches_forward[0].get("fileId") if (self.kwargs.get("link")) and (self.attaches_forward) else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward) if self.fileid or self.fileid_forward else None
         #chatlist.add(f"{self.chatname if self.chatname else self.user.contact.names[0].first_name +" "+self.user.contact.names[0].last_name} : {chatId}") это к функции lschat
     
