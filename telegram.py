@@ -2,7 +2,7 @@ import time
 
 import requests, json
 
-def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "", attachments: list[str] = [], type: str = "", file_url: str = ''):
+def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "", attachments: list[str] = []):
     if not attachments:  # нет фоток — просто текст
         if caption == "": return
         api_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"

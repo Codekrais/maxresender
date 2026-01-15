@@ -163,7 +163,8 @@ class Message:
         self.chatname = client.get_chats(chatId) if chatId else ""
         self._type = self.attaches[0].get("_type") if self.attaches else None
         self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
-        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None
+        self.fileid_forward = self.kwargs.get("link").get("message").get("attaches")[0].get("fileId") if self.kwargs.get("link") else None
+        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward) if self.fileid or self.fileid_forward else None
         #chatlist.add(f"{self.chatname if self.chatname else self.user.contact.names[0].first_name +" "+self.user.contact.names[0].last_name} : {chatId}") это к функции lschat
     
     # region reply()

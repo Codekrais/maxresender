@@ -48,31 +48,50 @@ def onmessage(client: Client, message: Message):
                     msg_text = message.kwargs["link"]["message"]["text"]
                     msg_attaches = message.kwargs["link"]["message"]["attaches"]
                     forwarded_msg_author = client.get_user(id=message.kwargs["link"]["message"]["sender"], _f=1)
-                    forward = f"<U>переслал(а) сообщение от:</U> {forwarded_msg_author.contact.names[0].first_name} {forwarded_msg_author.contact.names[0].last_name}"
+                    forward = f"♻️ <U>Переслал(а) сообщение от:</U> 👤 {forwarded_msg_author.contact.names[0].first_name} {forwarded_msg_author.contact.names[0].last_name}"
                     link = True
 
         if msg_text != "" or msg_attaches != []:
-            not_forward = f'<U>отправил(а) сообщение:</U>'
             match message.status:
                 case "REMOVED":
                     send_to_telegram(
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
-                        f"<b>Из чата \"{message.chatname}\"</b>:\n\n<b>{name}</b> <U>Удалил(а) сообщение:</U>\n\n{msg_text if msg_text != "" else ''}{f'Файл по ссылке: {message.url}'if message.url else ''}",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach], type=message._type, file_url=message.url)
+                        f"""
+<b>💬 Из чата \"{message.chatname}\"</b>:
+
+<b>👤 {name}</b> <U>❌ Удалил(а) сообщение:</U>
+
+<b>📜 Сообщение:</b> {msg_text}
+
+{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case "EDITED":
-                    edited = 'изменил(а) сообщение:\n\n'
                     send_to_telegram(
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
-                        f"<b>Из чата \"{message.chatname}\"</b>:\n\n<b>{name}</b> <U>{edited}</U>{msg_text if msg_text != "" else ''}{f'Файл по ссылке: {message.url}'if message.url else ''}",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach], type=message._type, file_url=message.url)
+                        f"""
+<b>💬 Из чата \"{message.chatname}\"</b>:
+
+<b>👤 {name}</b> <U>'✒️Изменил(а) сообщение:'</U>
+
+<b>📜 Сообщение:</b> {msg_text}
+
+{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case _:
                     send_to_telegram(
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
-                        f"<b>Из чата \"{message.chatname}\"</b>:\n\n<b>{name}</b> {forward if link else not_forward}\n\n{msg_text if msg_text != "" else ''}{f'Файл по ссылке: {message.url}'if message.url else ''}",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach], type=message._type, file_url=message.url)
+                        f"""
+<b>💬 Из чата \"{message.chatname}\"</b>:
+
+<b>👤 {name}</b> {forward if link else '<U>📨 Отправил(а) сообщение:</U>'}
+
+<b>📜 Сообщение:</b> {msg_text}
+
+{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
 
 def status_bot():
     #---Обработчики--
@@ -114,7 +133,7 @@ def status_bot():
 
 Бот работает на базе API мессенджера MAX и отправки запросов .json файлом по WEBSOCKETS. Написан на языке PYTHON
 
-<U>Версия: 0.5 beta от 23.12.25</U>
+<U>Версия: 0.6 beta от 15.01.26</U>
 
 Чтобы увидеть список команд,
 введите /com
