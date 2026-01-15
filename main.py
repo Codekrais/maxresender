@@ -60,7 +60,7 @@ def onmessage(client: Client, message: Message):
                         f"""
 <b>💬 Из чата \"{message.chatname}\"</b>:
 
-<b>👤 {name}</b> <U>❌ Удалил(а) сообщение:</U>
+<b>👤 {name}</b> ❌ <U>Удалил(а) сообщение:</U>
 
 <b>📜 Сообщение:</b> {msg_text}
 
@@ -73,7 +73,7 @@ def onmessage(client: Client, message: Message):
                         f"""
 <b>💬 Из чата \"{message.chatname}\"</b>:
 
-<b>👤 {name}</b> <U>'✒️Изменил(а) сообщение:'</U>
+<b>👤 {name}</b> ✒️ <U>'Изменил(а) сообщение:'</U>
 
 <b>📜 Сообщение:</b> {msg_text}
 
@@ -86,7 +86,7 @@ def onmessage(client: Client, message: Message):
                         f"""
 <b>💬 Из чата \"{message.chatname}\"</b>:
 
-<b>👤 {name}</b> {forward if link else '<U>📨 Отправил(а) сообщение:</U>'}
+<b>👤 {name}</b> {forward if link else '📨 <U>Отправил(а) сообщение:</U>'}
 
 <b>📜 Сообщение:</b> {msg_text}
 
