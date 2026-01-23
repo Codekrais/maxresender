@@ -1,5 +1,6 @@
 import time
 import requests, json
+from config import cfg
 
 def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "", attachments: list[str] = []):
     if not attachments:  # нет фоток — просто текст
@@ -10,7 +11,7 @@ def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "
             "text": caption, 
             "parse_mode": "HTML"
             })
-        if ispin():
+        if cfg.isPin:
             message_id = resp.json()['result']['message_id']
             pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
             pin_resp = requests.post(pin_url, data={
@@ -30,7 +31,7 @@ def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "
             "caption": caption,
             "parse_mode": "HTML"
         })
-        if ispin():
+        if cfg.isPin:
             message_id = resp.json()['result']['message_id']
             pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
             pin_resp = requests.post(pin_url, data={
@@ -60,7 +61,7 @@ def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "
         }
         resp = requests.post(api_url, data=payload)
         print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{resp.json()}\n')
-        if ispin():
+        if cfg.isPin:
             message_id = resp.json()['result'][0]['message_id']
             pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
             pin_resp = requests.post(pin_url, data={
@@ -74,8 +75,3 @@ def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "
     for i in range(0, len(attachments), 10):
         chunk = attachments[i:i+10]
         send_to_telegram(TG_BOT_TOKEN, TG_CHAT_ID, caption if i == 0 else "", chunk)
-def ispin():
-    with open("ispin.txt") as f:
-        if f.read().strip() == "1":
-            return True
-        return False

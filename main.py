@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 import telebot
 import threading
 import os
+from config import cfg
 
 
 load_dotenv()
@@ -192,19 +193,13 @@ def status_bot():
     @errorHandler
     @isAdmin
     def pin(message):
-        with open("ispin.txt") as f:
-            if f.read().strip() == "1":
-                with open("ispin.txt", "w") as f:
-                    pass
-                with open("ispin.txt", "w") as f:
-                    print("0", file=f)
-                    bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
-            else:
-                with open("ispin.txt", "w") as f:
-                    pass
-                with open("ispin.txt", "w") as f:
-                    print("1", file=f)
-                    bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
+        global cfg
+        if cfg.isPin:
+            cfg.isPin = False
+            bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
+        else:
+            cfg.isPin = True
+            bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
 
 
     while True:
