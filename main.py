@@ -133,7 +133,7 @@ def status_bot():
 
 Бот работает на базе API мессенджера MAX и отправки запросов .json файлом по WEBSOCKETS. Написан на языке PYTHON
 
-<U>Версия: 0.6 beta от 15.01.26</U>
+<U>Версия: 0.7 beta от 23.01.26</U>
 
 Чтобы увидеть список команд,
 введите /com
@@ -175,6 +175,8 @@ def status_bot():
 /com - список команд
 
 /lschat - список обработанных чатов (заглушена)
+
+/pin - включить/отключить закрепление сообщений ботом
         """)
 
     @bot.message_handler(commands=['lschat'])
@@ -185,6 +187,25 @@ def status_bot():
         if ls:
             bot.send_message(message.chat.id,f"Список обработанных чатов:\n{ls}")
         else: bot.send_message(message.chat.id,f"Список обработанных пуст!")
+
+    @bot.message_handler(commands=['pin'])
+    @errorHandler
+    @isAdmin
+    def pin(message):
+        with open("ispin.txt") as f:
+            if f.read().strip() == "1":
+                with open("ispin.txt", "w") as f:
+                    pass
+                with open("ispin.txt", "w") as f:
+                    print("0", file=f)
+                    bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
+            else:
+                with open("ispin.txt", "w") as f:
+                    pass
+                with open("ispin.txt", "w") as f:
+                    print("1", file=f)
+                    bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
+
 
     while True:
         try:
@@ -198,6 +219,3 @@ def status_bot():
 if __name__ == "__main__":
     client.run()
     threading.Thread(target=status_bot, daemon=True).start()
-
-
-

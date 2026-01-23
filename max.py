@@ -81,14 +81,14 @@ class MaxClient:
             "payload": {
                 "userAgent": {
                     "deviceType": "WEB",
-                    "locale": "en",
+                    "locale": "ru",
                     "osVersion": "Linux",
                     "deviceName": "Firefox",
                     "headerUserAgent": "Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
-                    "deviceLocale": "en",
+                    "deviceLocale": "ru",
                     "appVersion": "25.12.1",
                     "screen": "1920x1080 1.0x",
-                    "timezone": "UTC"
+                    "timezone": "Europe/Moscow",
                 },
                 "deviceId": str(uuid4())
             }
@@ -112,13 +112,16 @@ class MaxClient:
         """
         if self._connected:
             return
-        headers = [
-            ("Origin", "https://web.oneme.ru"),
-            ("Pragma", "no-cache"),
-            ("Cache-Control", "no-cache"),
-            ("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
-        ]
-        self.websocket = connect("wss://ws-api.oneme.ru/websocket", additional_headers=headers)
+        # headers = [
+        #     ("Origin", "https://web.oneme.ru"),
+        #     ("Pragma", "no-cache"),
+        #     ("Cache-Control", "no-cache"),
+        #     ("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
+        # ]
+        self.websocket = connect(
+                "wss://ws-api.oneme.ru/websocket",
+                user_agent_header="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
+                origin="https://web.max.ru")
         self.websocket.send(self.user_agent)
         self.websocket.recv()
 
@@ -210,12 +213,12 @@ class MaxClient:
                 }))
             except Exception as e:
                 print("Heartbeat error:", e)
-            time.sleep(25)
+            time.sleep(30)
 
 
     # region _listener()
     def _listener(self):
-        while True:
+        while not self._t_stop:
             try:
                 recv = json.loads(self.websocket.recv())
             except ConnectionClosedError:
@@ -243,13 +246,14 @@ class MaxClient:
             print(f'[{self.current_time()}]\nПРИНЯТЫЙ ПАКЕТ ОТ MAX\n {json.dumps(recv, ensure_ascii=False, indent=4)}\n')
             opcode = recv.get("opcode")
             payload = recv.get("payload")
+            seq = recv.get("seq")
             match opcode:
 
                 case 1:
                     self.websocket.send(json.dumps({
                         "ver": 11,
                         "cmd": 0,
-                        "seq": self.seq,
+                        "seq": seq,
                         "opcode": 1,
                         "payload": {"interactive": False}
                     }))
@@ -414,10 +418,11 @@ class MaxClient:
         return self.me
 
     def get_chats(self,id:int) -> str:
+        seq = self.seq #получает текущую секвенцию и добавляет 1 к основной
         self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
-            "seq": self._seq,
+            "seq": seq,
             "opcode": 48,
             "payload": {
                 'chatIds': [id]
@@ -425,15 +430,12 @@ class MaxClient:
         }))
         while True:
             recv = json.loads(self.websocket.recv())
-            if recv["seq"] != self.seq:
+            if recv["seq"] != seq:
                 pass
             else:
                 break
         title = recv.get('payload').get('chats')[0].get('title')
-        if title:
-            chatname = title
-        else: chatname = ""
-        return chatname
+        return title
 
     # region send_message()
     def send_message(self, chat_id: int, text: str, reply_id: str|int = None, notify: bool = True) -> str:
@@ -490,6 +492,19 @@ class MaxClient:
             }
 
         self.websocket.send(json.dumps(j))
+        # while True:
+        #     recv = json.loads(self.websocket.recv())
+        #     if recv["seq"] != seq:
+        #         pass
+        #     else:
+        #         break
+        # payload = recv["payload"]
+        # try:
+        #     msg = Message(self, payload["chatId"], **payload["message"])
+        #
+        #     return msg
+        # except:
+        #     raise
         return "Сообщение было отправлено!✅"
 
     # region delete_message()
@@ -839,10 +854,11 @@ class MaxClient:
         return func
 
     def download_file(self,chat_id: int, message_id: str, file_id: int) -> str:
+        seq = self.seq
         self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
-            "seq": self.seq,
+            "seq": seq,
             "opcode": 88 ,
             "payload": {
                 "fileId": file_id,
@@ -850,24 +866,11 @@ class MaxClient:
                 "messageId": message_id
             }
         }))
-        resp = json.loads(self.websocket.recv())
-        try:
-            url = resp["payload"]["url"]
-        except: url = None
+        while True:
+            recv = json.loads(self.websocket.recv())
+            if recv["seq"] != seq:
+                pass
+            else:
+                break
+        url = recv["payload"].get("url")
         return url
-
-    # def get_chats(self,id:int):
-    #     self.websocket.send(json.dumps({
-    #         "ver": 11,
-    #         "cmd": 0,
-    #         "seq": self.seq,
-    #         "opcode": 48,
-    #         "payload": {
-    #             'chatIds': [id]
-    #         }
-    #     }))
-    #     recv = json.loads(self.websocket.recv())
-    #     try:
-    #         chatname = recv.get('payload').get('chats')[0].get('title')
-    #     except: chatname = None
-    #     return chatname
