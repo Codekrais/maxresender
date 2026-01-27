@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 import telebot
 import threading
 import os
-from config import cfg
+import json
 
 
 load_dotenv()
@@ -193,13 +193,16 @@ def status_bot():
     @errorHandler
     @isAdmin
     def pin(message):
-        global cfg
-        if cfg.isPin:
-            cfg.isPin = False
+        with open('config.json', encoding='UTF-8') as f:
+            data = json.load(f)
+        if data["pin"] == "True":
+            data["pin"] = "False"
             bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
         else:
-            cfg.isPin = True
+            data["pin"] = "True"
             bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
+        with open('config.json', 'w', encoding='UTF-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
 
 
     while True:
