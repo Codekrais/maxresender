@@ -28,7 +28,9 @@ class Name:
 
 # region Contact
 class Contact:
-    def __init__(self, client, accountStatus = None, baseUrl = None, names = None, phone = None, description = None, options = None, photoId = None, updateTime = None, id = None, baseRawUrl = None, gender = None, link = None, country = None):
+    def __init__(self, client, accountStatus = None, baseUrl = None, names = None, phone = None, description = None,
+                 options = None, photoId = None, updateTime = None, id = None, baseRawUrl = None,
+                 gender = None, link = None, country = None):
         """
         Represents a contact with detailed profile information.
 
@@ -100,7 +102,19 @@ class Chat:
         self.link = f"https://web.max.ru/{chat_id}"
 
         seq = client.seq
-        client.websocket.send(json.dumps({"ver":11,"cmd":0,"seq":seq,"opcode":49,"payload":{"chatId":chat_id,"from":int(time.time()*1000),"forward":0,"backward":30,"getMessages":True}}))
+        client.websocket.send(json.dumps({
+                "ver":11,
+                "cmd":0,
+                "seq":seq,
+                    "opcode":49,
+                "payload":{
+                    "chatId":chat_id,
+                    "from":int(time.time()*1000),
+                    "forward":0,
+                    "backward":30,
+                    "getMessages":True
+                }
+            }))
         while True:
             r = client.websocket.recv()
             recv = json.loads(r)
@@ -161,11 +175,16 @@ class Message:
         self.attaches_forward = self.kwargs.get("link",{}).get("message",{}).get("attaches",[])
         self.reaction_info = kwargs.get("reactionInfo", {})
         self.user = client.get_user(id=sender, _f=1)
-        self.chatname = client.get_chats(chatId) if chatId else ""
-        self._type = self.attaches[0].get("_type") if self.attaches else None
-        self.fileid = self.attaches[0].get('fileId') if self._type == "FILE" else None
-        self.fileid_forward = self.attaches_forward[0].get("fileId") if (self.kwargs.get("link")) and (self.attaches_forward) else None
-        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward) if self.fileid or self.fileid_forward else None
+        self.chatname = client.get_chats(chatId)\
+            if chatId else ""
+        self._type = self.attaches[0].get("_type")\
+            if self.attaches else None
+        self.fileid = self.attaches[0].get('fileId')\
+            if self._type == "FILE" else None
+        self.fileid_forward = self.attaches_forward[0].get("fileId") \
+            if (self.kwargs.get("link")) and (self.attaches_forward) else None
+        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward)\
+            if self.fileid or self.fileid_forward else None
         #chatlist.add(f"{self.chatname if self.chatname else self.user.contact.names[0].first_name +" "+self.user.contact.names[0].last_name} : {chatId}") это к функции lschat
     
     # region reply()

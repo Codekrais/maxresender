@@ -119,9 +119,10 @@ class MaxClient:
         #     ("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/117.0.0.0 Safari/537.36")
         # ]
         self.websocket = connect(
-                "wss://ws-api.oneme.ru/websocket",
+                uri="wss://ws-api.oneme.ru/websocket",
                 user_agent_header="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
-                origin="https://web.max.ru")
+                origin="https://web.max.ru"
+        )
         self.websocket.send(self.user_agent)
         self.websocket.recv()
 
@@ -704,7 +705,13 @@ class MaxClient:
     # region session_exit()
     def session_exit(self):
         """Terminates active session token. **There no way back.**"""
-        j = {"ver":11,"cmd":0,"seq":self.seq,"opcode":20,"payload":{}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":self.seq,
+            "opcode":20,
+            "payload":{}
+        }
         self.websocket.send(json.dumps(j))
         self.disconnect()
         return True
@@ -726,7 +733,20 @@ class MaxClient:
                     including counters for each emoji, your own reaction, and the total count.
         """
         seq = self.seq
-        j = {"ver":11,"cmd":0,"seq":seq,"opcode":178,"payload":{"chatId":chat_id,"messageId":message_id,"reaction":{"reactionType":"EMOJI","id":reaction}}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":seq,
+            "opcode":178,
+            "payload":{
+                "chatId":chat_id,
+                "messageId":message_id,
+                "reaction":{
+                    "reactionType":"EMOJI"
+                    ,"id":reaction
+                }
+            }
+        }
         self.websocket.send(json.dumps(j))
 
         while True:
@@ -743,7 +763,16 @@ class MaxClient:
     # region contact_add()
     def contact_add(self, user_id: int):
         seq = self.seq
-        j = {"ver":11, "cmd":0, "seq":seq, "opcode":34, "payload":{"contactId": user_id, "action": "ADD"}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":seq,
+            "opcode":34,
+            "payload":{
+                "contactId": user_id,
+                "action": "ADD"
+            }
+        }
         self.websocket.send(json.dumps(j))
 
         while True:
@@ -759,7 +788,16 @@ class MaxClient:
     # region contact_remove()
     def contact_remove(self, user_id: int):
         seq = self.seq
-        j = {"ver":11, "cmd":0, "seq":seq, "opcode":34, "payload":{"contactId": user_id, "action": "REMOVE"}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":seq,
+            "opcode":34,
+            "payload":{
+                "contactId": user_id,
+                "action": "REMOVE"
+            }
+        }
         self.websocket.send(json.dumps(j))
 
         while True:
@@ -774,7 +812,16 @@ class MaxClient:
     # region contact_block()
     def contact_block(self, user_id: int):
         seq = self.seq
-        j = {"ver":11, "cmd":0, "seq":seq, "opcode":34, "payload":{"contactId": user_id, "action": "BLOCK"}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":seq,
+            "opcode":34,
+            "payload":{
+                "contactId": user_id,
+                "action": "BLOCK"
+            }
+        }
         self.websocket.send(json.dumps(j))
 
         while True:
@@ -789,7 +836,16 @@ class MaxClient:
     # region contact_unblock()
     def contact_unblock(self, user_id: int):
         seq = self.seq
-        j = {"ver":11, "cmd":0, "seq":seq, "opcode":34, "payload":{"contactId": user_id, "action": "UNBLOCK"}}
+        j = {
+            "ver":11,
+            "cmd":0,
+            "seq":seq,
+            "opcode":34,
+            "payload":{
+                "contactId": user_id,
+                "action": "UNBLOCK"
+            }
+        }
         self.websocket.send(json.dumps(j))
 
         while True:
