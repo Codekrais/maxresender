@@ -1,6 +1,5 @@
 import json, time
 from typing import Literal
-from pprint import pprint
 EMOJIS = Literal[
     '❤️','👍','🤣','🔥','💯','😍','🎉','⚡',
     '🤩','🤘','😎','🙄','😐','😁','🤪','😉',
@@ -11,7 +10,16 @@ EMOJIS = Literal[
     '🗿','👀','👁️','🖤','❤️‍🩹','🛑','⛄','❓',
     '❗️'
 ]
-chatlist = set()
+
+
+def get_chatlist():
+    with open('chatlist.json', encoding='UTF-8') as f:
+        data = json.load(f)
+    res = ""
+    for chat_id, name in data.items():
+        res += f"{name}: {chat_id}\n"
+    return res
+
 # region Name
 class Name:
     def __init__(self, name='', firstName='', lastName='', type=''):
@@ -21,10 +29,10 @@ class Name:
         This class stores name-related information for a contact, including a full name,
         first name, last name, and type.
         """
-        self.name = name
         self.first_name = firstName
         self.last_name = lastName
         self.type = type
+        self.name = f"{firstName} {lastName}".rstrip()
 
 # region Contact
 class Contact:
@@ -185,7 +193,18 @@ class Message:
             if (self.kwargs.get("link")) and (self.attaches_forward) else None
         self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward)\
             if self.fileid or self.fileid_forward else None
-        #chatlist.add(f"{self.chatname if self.chatname else self.user.contact.names[0].first_name +" "+self.user.contact.names[0].last_name} : {chatId}") это к функции lschat
+        self.add_in_chatlist(chatid=str(chatId), chatname=str(self.chatname)) if chatId != 0 else None
+
+    def add_in_chatlist(self, chatid:str, chatname:str):
+        with open('chatlist.json', encoding='UTF-8') as f:
+            data = json.load(f)
+
+        data.update({chatid:chatname})
+
+        with open('chatlist.json', 'w', encoding='UTF-8') as f:
+            json.dump(data, f, ensure_ascii=False, indent=4)
+
+
     
     # region reply()
     def reply(self, text: str, **kwargs) -> "Message":

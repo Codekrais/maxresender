@@ -1,6 +1,7 @@
 from max import MaxClient as Client
+from max_bot import MaxClientBot as Client_bot
 from filters import filters
-from classes import Message, chatlist
+from classes import Message, get_chatlist
 from telegram import send_to_telegram
 import time, os
 from dotenv import load_dotenv
@@ -17,7 +18,7 @@ MAX_CHAT_IDS = [int(x) for x in os.getenv("MAX_CHAT_IDS").split(",")]
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
 TG_ADMIN_ID = [x for x in os.getenv("TG_ADMIN_ID").split(",")]
-bot = telebot.TeleBot(TG_BOT_TOKEN)
+bot = telebot.TeleBot(TG_BOT_TOKEN, parse_mode="HTML")
 
 
 
@@ -26,6 +27,7 @@ if MAX_TOKEN == "" or MAX_CHAT_IDS == [] or TG_BOT_TOKEN == "" or TG_CHAT_ID == 
 MONITOR_ID = os.getenv("MONITOR_ID")
 
 client = Client(MAX_TOKEN)
+client_bot = Client_bot(MAX_TOKEN)
 
 @client.on_connect
 def onconnect():
@@ -134,7 +136,7 @@ def status_bot():
 
 Бот работает на базе API мессенджера MAX и отправки запросов .json файлом по WEBSOCKETS. Написан на языке PYTHON
 
-<U>Версия: 0.7 beta от 23.01.26</U>
+<U>Версия: 0.8 beta от 11.02.26</U>
 
 Чтобы увидеть список команд,
 введите /com
@@ -159,8 +161,15 @@ def status_bot():
                 case 0:
                     bot.send_message(message.chat.id, "Отправка сообщения в этот чат невозможна!❌")
                 case _:
-                    recv = client.send_message(chat_id=int(max_chat_id), text=message_body) #Отправка сообщения
-                    bot.send_message(message.chat.id, recv)
+                    client_bot.run()
+                    recv = client_bot.send_message(chat_id=int(max_chat_id), text=message_body)
+                    #Отправка сообщения
+                    if not recv:
+                        name = client_bot.get_chats(id=int(max_chat_id))
+                        bot.send_message(message.chat.id, f'Сообщение в чат <b>"{name.upper()}"</b> было успешно отправлено✅')
+                    else: bot.send_message(message.chat.id, f"При отправке сообщения произошла ошибка: {recv}❌")
+
+                    client_bot.disconnect()
 
     @bot.message_handler(commands=['com'])
     @errorHandler
@@ -170,23 +179,27 @@ def status_bot():
 
 /status - статус бота
 
-/send {чат-id чата из MAX} {Сообщение (только текст)} - ДОСТУПНО ТОЛЬКО АДМИНАМ (привилегированная функция) отправить сообщение в чат MAX по чат-id (заглушена)
+/send {чат-id чата из MAX} {Сообщение (только текст)} - ДОСТУПНО ТОЛЬКО АДМИНАМ (привилегированная функция) отправить сообщение в чат MAX по чат-id
 
 /com - список команд
 
-/lschat - список обработанных чатов (заглушена)
+/lschat - список обработанных чатов
 
 /pin - включить/отключить закрепление сообщений ботом
+
+/max_id {номер телефона} - получить чат-id из MAX по номеру телефона
         """)
 
     @bot.message_handler(commands=['lschat'])
     @errorHandler
-    @fstub
+    @isAdmin
     def ls(message):
-        ls = "\n".join(chatlist)
+        ls = get_chatlist()
         if ls:
-            bot.send_message(message.chat.id,f"Список обработанных чатов:\n{ls}")
-        else: bot.send_message(message.chat.id,f"Список обработанных пуст!")
+            bot.send_message(message.chat.id,f"""<b>СПИСОК ОБРАБОТАННЫХ ЧАТОВ:</b>
+            
+{ls}""")
+        else: bot.send_message(message.chat.id,f"Список обработанных чатов пуст!❌")
 
     @bot.message_handler(commands=['pin'])
     @errorHandler
@@ -202,6 +215,23 @@ def status_bot():
             bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
         with open('config.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+    @bot.message_handler(commands=['max_id'])
+    @errorHandler
+    @isAdmin
+    def max_id(message):
+        message_body = message.text.split(" ")
+        if len(message_body) == 2:
+            phone = message_body[1]
+            client_bot.run()
+            recv = client_bot.get_user(phone=int(phone))
+            if recv:
+                res = f"{recv.contact.names[0].name}: {recv.contact.id}"
+                bot.send_message(message.chat.id, res)
+            else: bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
+            client_bot.disconnect()
+        else: bot.send_message(message.chat.id, "Вы не ввели номер‼️")
+
 
     while True:
         try:

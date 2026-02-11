@@ -12,7 +12,7 @@ from datetime import datetime
 
 
 # region class MaxClient
-class MaxClient:
+class MaxClientBot:
     def __init__(self, token: str|None = None, phone: str|None = None):
         """
         Initializes a new instance of the MaxClient class.
@@ -196,14 +196,6 @@ class MaxClient:
         """
         self.auth_token = token
 
-    # region _hlprocessor()
-    def _hlprocessor(self, msg: Message):
-        """Internal worker. Don't touch."""
-        for filter, func in self.handlers:
-            if filter(self, msg):
-                func(self, msg)
-                return
-
     def _heartbeat(self):
         """Отправляет пинг серверу каждые 25 секунд"""
         while self._connected and not self._t_stop:
@@ -218,67 +210,6 @@ class MaxClient:
             except Exception as e:
                 print("Heartbeat error:", e)
             time.sleep(30)
-
-
-    # region _listener()
-    def _listener(self):
-        while not self._t_stop:
-            try:
-                recv = json.loads(self.websocket.recv())
-            except ConnectionClosedError:
-                self._connected = False
-                try:
-                    if self.websocket:
-                        self.websocket.close()
-                except:
-                    pass
-                time.sleep(3)
-                try:
-                    self.connect()
-                except Exception as ee:
-                    print("Не смог встать:", ee)
-                    time.sleep(5)
-
-                else:
-                    break
-
-            except Exception as e:
-                print("Иная беда:", e)
-                self._connected = False
-                time.sleep(5)
-                continue
-            print(f'[{self.current_time()}]\nПРИНЯТЫЙ ПАКЕТ ОТ MAX\n {json.dumps(recv, ensure_ascii=False, indent=4)}\n')
-            opcode = recv.get("opcode")
-            payload = recv.get("payload")
-            seq = recv.get("seq")
-            match opcode:
-
-                case 1:
-                    self.websocket.send(json.dumps({
-                        "ver": 11,
-                        "cmd": 0,
-                        "seq": seq,
-                        "opcode": 1,
-                        "payload": {"interactive": False}
-                    }))
-                    self.websocket.recv()
-
-                case 128:
-                    check_attaches = False
-                    if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
-                        check_attaches = True
-                    if not check_attaches:
-                        msg = Message(self, payload["chatId"], **payload["message"])
-                        self._hlprocessor(msg)
-                case 64:
-                    check_attaches = False
-                    if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
-                        check_attaches = True
-                    if not check_attaches:
-                        msg = Message(self, payload["chatId"], **payload["message"])
-                        self._hlprocessor(msg)
-                case _:
-                    pass
 
     # region run()
     def run(self):
@@ -295,8 +226,6 @@ class MaxClient:
             ```
         """
         self.connect()
-        self._t = threading.Thread(target=self._listener, name="WebMaxListener")
-        self._t.start()
         threading.Thread(target=self._heartbeat, name="WebMaxHeartbeat", daemon=True).start()
     
     def stop(self):
@@ -419,7 +348,7 @@ class MaxClient:
         return self.me
 
     def get_chats(self,id:int) -> str:
-        seq = self.seq #получает текущую секвенцию и добавляет 1 к основной
+        seq = self.seq  # получает текущую секвенцию и добавляет 1 к основной
         if "-" in str(id):
             self.websocket.send(json.dumps({
                 "ver": 11,
@@ -516,23 +445,16 @@ class MaxClient:
                 "messageId": str(reply_id)
             }
         self.websocket.send(json.dumps(j))
-        # while True:
-        #     recv = json.loads(self.websocket.recv())
-        #     if recv["seq"] != seq:
-        #         pass
-        #     else:
-        #         break
-        # payload = recv["payload"]
-        # try:
-        #     msg = Message(self, payload["chatId"], **payload["message"])
-        #     return msg
-        # except:
-        #     raise
-        time.sleep(0.5)
-        if self.error:
-            return f"""Ошибка отправки сообщения:
-{self.error}❌"""
-        return "Сообщение было отправлено!✅"
+        while True:
+            recv = json.loads(self.websocket.recv())
+            if recv["seq"] != seq:
+                pass
+            else:
+                break
+        try:
+            return recv["payload"].get("error")
+        except:
+            raise
 
     # region delete_message()
     def delete_message(self, chat_id: int, message_ids: list[str], for_me: bool = False):
@@ -718,7 +640,7 @@ class MaxClient:
         error = payload.get("error")
 
         if error:
-            raise UserNotFound(error, payload["message"]+f": {phone}")
+            return False
 
         if id:
             contact = payload["contacts"][0]
