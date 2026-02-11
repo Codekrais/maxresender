@@ -220,7 +220,7 @@ def status_bot():
     @errorHandler
     @isAdmin
     def max_id(message):
-        message_body = message.text.split(" ")
+        message_body = message.text.split()
         if len(message_body) == 2:
             phone = message_body[1]
             client_bot.run()
