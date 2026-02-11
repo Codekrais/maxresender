@@ -1,5 +1,5 @@
 from websockets.sync.client import connect
-from websockets.exceptions import ConnectionClosedError
+from websockets.exceptions import ConnectionClosedError, ConcurrencyError, ConnectionClosed
 import json
 import threading
 import time
@@ -7,6 +7,7 @@ from uuid import uuid4
 from classes import *
 from errors import *
 from datetime import datetime
+
 
 
 
@@ -27,6 +28,8 @@ class MaxClient:
             # Now you can use client methods like connect(), auth(), etc.
             ```
         """
+        self.error = False
+        self.id = None
 
         # print("Loaded WebMaxLib")
 
@@ -269,8 +272,9 @@ class MaxClient:
                         self._hlprocessor(msg)
                 case 64:
                     if payload.get("error"):
-                        pass
+                        self.error = payload.get("error")
                     else:
+                        self.error = False
                         check_attaches = False
                         if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
                             check_attaches = True
@@ -437,7 +441,6 @@ class MaxClient:
                 break
         title = recv.get('payload').get('chats')[0].get('title')
         return title
-
     # region send_message()
     def send_message(self, chat_id: int, text: str, reply_id: str|int = None, notify: bool = True) -> str:
         """
@@ -502,10 +505,13 @@ class MaxClient:
         # payload = recv["payload"]
         # try:
         #     msg = Message(self, payload["chatId"], **payload["message"])
-        #
         #     return msg
         # except:
         #     raise
+        time.sleep(0.5)
+        if self.error:
+            return f"""Ошибка отправки сообщения:
+{self.error}❌"""
         return "Сообщение было отправлено!✅"
 
     # region delete_message()

@@ -146,7 +146,6 @@ def status_bot():
 
     @bot.message_handler(commands=['send'])
     @errorHandler
-    @fstub
     @isAdmin
     def send(message):
         argument_list = message.text.split(" ") #Парсинг сообщения
@@ -204,9 +203,9 @@ def status_bot():
         with open('config.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
-
     while True:
         try:
+            bot.delete_webhook(drop_pending_updates=True)
             bot.polling(non_stop=True)
         except:
             print("Ошибка статус-бота")
