@@ -17,7 +17,7 @@ def get_chatlist():
         data = json.load(f)
     res = ""
     for chat_id, name in data.items():
-        res += f"{name}: {chat_id}\n"
+        res += f"{name}: <code>{chat_id}</code>\n\n"
     return res
 
 # region Name
