@@ -226,7 +226,9 @@ def status_bot():
             client_bot.run()
             recv = client_bot.get_user(phone=int(phone))
             if recv:
-                res = f"{recv.contact.names[0].name}: {recv.chat.id}"
+                res = f"""<b>ПОЛЬЗОВАТЕЛЬ</b> {recv.contact.names[0].name}
+<b>CHAT_id</b> <code>{recv.chat.id}</code>
+<b>Ссылка</b> {recv.chat.link}"""
                 bot.send_message(message.chat.id, res)
             else: bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
             client_bot.disconnect()
