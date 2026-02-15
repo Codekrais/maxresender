@@ -185,14 +185,10 @@ class Message:
         self.user = client.get_user(id=sender, _f=1)
         self.chatname = client.get_chats(chatId)\
             if chatId else ""
-        self._type = self.attaches[0].get("_type")\
-            if self.attaches else None
-        self.fileid = self.attaches[0].get('fileId')\
-            if self._type == "FILE" else None
-        self.fileid_forward = self.attaches_forward[0].get("fileId") \
-            if (self.kwargs.get("link")) and (self.attaches_forward) else None
-        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid or self.fileid_forward)\
-            if self.fileid or self.fileid_forward else None
+        self._type = self.get_ftype()
+        self.fileid = self.get_fileid()
+        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid)\
+            if self.fileid else None
         self.add_in_chatlist(chatid=str(chatId), chatname=str(self.chatname)) if chatId != 0 else None
 
     def add_in_chatlist(self, chatid:str, chatname:str):
@@ -203,6 +199,28 @@ class Message:
 
         with open('chatlist.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
+
+    def get_ftype(self):
+        if self.attaches:
+            return self.attaches[0].get("_type")
+        elif self.attaches_forward:
+            return self.attaches_forward[0].get("_type")
+        else:
+            return None
+
+    def get_fileid(self):
+        if self._type == "FILE" and not self.kwargs.get("link"):
+            return self.attaches[0].get('fileId')
+        elif (self.kwargs.get("link")) and (self.attaches_forward):
+            return self.attaches_forward[0].get('fileId')
+
+        elif self._type == "VIDEO" and not self.kwargs.get("link"):
+            return self.attaches[0].get('videoId')
+
+        else: return None
+
+
+
 
 
     

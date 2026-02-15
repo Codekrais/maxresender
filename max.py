@@ -7,6 +7,7 @@ from uuid import uuid4
 from classes import *
 from errors import *
 from datetime import datetime
+from pprint import pprint
 
 
 
@@ -956,3 +957,26 @@ class MaxClient:
                 break
         url = recv["payload"].get("url")
         return url
+
+    def download_video(self,chat_id: int, message_id: int, video_id: int) -> str:
+        '''
+        return invalid url
+        '''
+        seq = self.seq
+        self.websocket.send(json.dumps({
+            "ver": 11,
+            "cmd": 0,
+            "seq": seq,
+            "opcode": 83 ,
+            "payload": {
+                "videoId": video_id,
+                "chatId": chat_id,
+                "messageId": message_id
+            }
+        }))
+        while True:
+            recv = json.loads(self.websocket.recv())
+            if recv["seq"] != seq:
+                pass
+            else:
+                break

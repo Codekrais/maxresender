@@ -29,6 +29,12 @@ MONITOR_ID = os.getenv("MONITOR_ID")
 client = Client(MAX_TOKEN)
 client_bot = Client_bot(MAX_TOKEN)
 
+def check_type(message: Message) -> str:
+    match message._type:
+        case "VIDEO": return "Видеофайл"
+        case "AUDIO": return "Аудиофайл"
+        case _: return ""
+
 @client.on_connect
 def onconnect():
     if client.me != None:
@@ -65,9 +71,8 @@ def onmessage(client: Client, message: Message):
 
 <b>👤 {name}</b> ❌ <U>Удалил(а) сообщение:</U>
 
-<b>📜 Сообщение:</b> {msg_text}
-
-{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
+{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case "EDITED":
                     send_to_telegram(
@@ -78,9 +83,8 @@ def onmessage(client: Client, message: Message):
 
 <b>👤 {name}</b> ✒️ <U>'Изменил(а) сообщение:'</U>
 
-<b>📜 Сообщение:</b> {msg_text}
-
-{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
+{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case _:
                     send_to_telegram(
@@ -92,8 +96,8 @@ def onmessage(client: Client, message: Message):
 <b>👤 {name}</b> {forward if link else '📨 <U>Отправил(а) сообщение:</U>'}
 
 <b>📜 Сообщение:</b> {msg_text}
-
-{f'<b>🔗 Файл по ссылке:</b> {message.url}'if message.url else ''}""",
+{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
+{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
 
 def status_bot():
