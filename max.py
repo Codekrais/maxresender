@@ -266,7 +266,7 @@ class MaxClient:
 
                 case 128:
                     check_attaches = False
-                    if (payload['message']['attaches'] and payload['message']['attaches'][0].get('event')) or payload['message'].get("type") == "CHANNEL":
+                    if (payload['message']['attaches'] and payload['message']['attaches'][0].get('event')):
                         check_attaches = True
                     if not check_attaches:
                         msg = Message(self, payload["chatId"], **payload["message"])

@@ -158,7 +158,7 @@ class Chat:
 # region Message
 class Message:
 
-    def __init__(self, client, chatId: str, sender: str, id, time, text, type, _f=0, **kwargs):
+    def __init__(self, client, chatId: str, sender: str = None, id = None, time = None, text = None, type = None, _f=0, **kwargs):
         """
         Represents a message in a chat.
 
@@ -176,13 +176,14 @@ class Message:
         self.time = time
         self.text = text
         self.type = type
+        self.forward_type =  self.kwargs.get("link",{}).get("message",{}).get("type")
         self.update_time = kwargs.get("updateTime")
         self.options = kwargs.get("options")
         self.cid = kwargs.get("cid")
         self.attaches = kwargs.get("attaches", [])
         self.attaches_forward = self.kwargs.get("link",{}).get("message",{}).get("attaches",[])
         self.reaction_info = kwargs.get("reactionInfo", {})
-        self.user = client.get_user(id=sender, _f=1)
+        self.user = client.get_user(id=sender, _f=1) if sender else None
         self.chatname = client.get_chats(chatId)\
             if chatId else ""
         self._type = self.get_ftype()

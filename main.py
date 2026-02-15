@@ -29,18 +29,39 @@ MONITOR_ID = os.getenv("MONITOR_ID")
 client = Client(MAX_TOKEN)
 client_bot = Client_bot(MAX_TOKEN)
 
-def check_type(message: Message) -> str:
+def check_file_type(message: Message) -> str:
     match message._type:
-        case "VIDEO": return "Видеофайл"
-        case "AUDIO": return "Аудиофайл"
+        case "VIDEO": return f'<b>🪛 Необработанные файлы:</b> Видеофайл'
+        case "AUDIO": return f'<b>🪛 Необработанные файлы:</b> Аудиофайл'
         case _: return ""
 
-def get_usr_name(message: Message) -> str:
-    match message.type:
+def get_forward_usr_name(message: Message) -> str:
+    match message.forward_type:
         case "USER":
             return client.get_user(id=message.kwargs["link"]["message"]["sender"], _f=1).contact.names[0].name
         case "CHANNEL":
-            return "Необработанный канал"
+            return message.kwargs["link"]["chatName"]
+
+def get_usr_name(message: Message) -> str:
+    match message.type:
+        case "USER" :
+            return message.user.contact.names[0].name
+        case "CHANNEL":
+            return "Администратор канала"
+
+def get_chatname(message: Message) -> str:
+    match message.type:
+        case "USER":
+            return f"<b>💬 Из чата \"{message.chatname}\"</b>:"
+        case "CHANNEL":
+            return f"<b>💬 Из канала \"{message.chatname}\"</b>:"
+
+def get_file_url(message: Message) -> str:
+    if message.url:
+        return f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'
+    else:
+        return ""
+
 
 
 @client.on_connect
@@ -56,7 +77,7 @@ def onmessage(client: Client, message: Message):
     if message.chat.id in MAX_CHAT_IDS: #Если добавить not, то тогда парсер будет исключать чат-id из списка тех, которые он парсит
         msg_text = message.text
         msg_attaches = message.attaches
-        name = message.user.contact.names[0].name
+        name = get_usr_name(message)
         if "link" in message.kwargs.keys():
             if "type" in message.kwargs["link"]:
                 if message.kwargs["link"]["type"] == "REPLY":  # TODO
@@ -64,7 +85,7 @@ def onmessage(client: Client, message: Message):
                 if message.kwargs["link"]["type"] == "FORWARD":
                     msg_text = message.kwargs["link"]["message"]["text"]
                     msg_attaches = message.kwargs["link"]["message"]["attaches"]
-                    forwarded_msg_author = get_usr_name(message)
+                    forwarded_msg_author = get_forward_usr_name(message)
                     forward = f"♻️ <U>Переслал(а) сообщение от:</U> 👤 {forwarded_msg_author}"
                     link = True
 
@@ -75,39 +96,39 @@ def onmessage(client: Client, message: Message):
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
-<b>💬 Из чата \"{message.chatname}\"</b>:
+{get_chatname(message)}
 
 <b>👤 {name}</b> ❌ <U>Удалил(а) сообщение:</U>
 
 <b>📜 Сообщение:</b> {msg_text}
-{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
-{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
+{get_file_url(message)}
+{check_file_type(message)}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case "EDITED":
                     send_to_telegram(
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
-<b>💬 Из чата \"{message.chatname}\"</b>:
+{get_chatname(message)}
 
-<b>👤 {name}</b> ✒️ <U>'Изменил(а) сообщение:'</U>
+<b>👤 {name}</b> ✒️ <U>Изменил(а) сообщение:</U>
 
 <b>📜 Сообщение:</b> {msg_text}
-{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
-{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
+{get_file_url(message)}
+{check_file_type(message)}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
                 case _:
                     send_to_telegram(
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
-<b>💬 Из чата \"{message.chatname}\"</b>:
+{get_chatname(message)}
 
 <b>👤 {name}</b> {forward if link else '📨 <U>Отправил(а) сообщение:</U>'}
 
 <b>📜 Сообщение:</b> {msg_text}
-{f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
-{f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
+{get_file_url(message)}
+{check_file_type(message)}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
 
 def status_bot():
