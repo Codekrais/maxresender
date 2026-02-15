@@ -1,6 +1,6 @@
 from max import MaxClient as Client
 from max_bot import MaxClientBot as Client_bot
-from filters import filters
+from filters import filters, user
 from classes import Message, get_chatlist
 from telegram import send_to_telegram
 import time, os
@@ -35,6 +35,14 @@ def check_type(message: Message) -> str:
         case "AUDIO": return "Аудиофайл"
         case _: return ""
 
+def get_usr_name(message: Message) -> str:
+    match message.type:
+        case "USER":
+            return client.get_user(id=message.kwargs["link"]["message"]["sender"], _f=1).contact.names[0].name
+        case "CHANNEL":
+            return "Необработанный канал"
+
+
 @client.on_connect
 def onconnect():
     if client.me != None:
@@ -48,7 +56,7 @@ def onmessage(client: Client, message: Message):
     if message.chat.id in MAX_CHAT_IDS: #Если добавить not, то тогда парсер будет исключать чат-id из списка тех, которые он парсит
         msg_text = message.text
         msg_attaches = message.attaches
-        name = message.user.contact.names[0].first_name + ' ' + message.user.contact.names[0].last_name
+        name = message.user.contact.names[0].name
         if "link" in message.kwargs.keys():
             if "type" in message.kwargs["link"]:
                 if message.kwargs["link"]["type"] == "REPLY":  # TODO
@@ -56,8 +64,8 @@ def onmessage(client: Client, message: Message):
                 if message.kwargs["link"]["type"] == "FORWARD":
                     msg_text = message.kwargs["link"]["message"]["text"]
                     msg_attaches = message.kwargs["link"]["message"]["attaches"]
-                    forwarded_msg_author = client.get_user(id=message.kwargs["link"]["message"]["sender"], _f=1)
-                    forward = f"♻️ <U>Переслал(а) сообщение от:</U> 👤 {forwarded_msg_author.contact.names[0].first_name} {forwarded_msg_author.contact.names[0].last_name}"
+                    forwarded_msg_author = get_usr_name(message)
+                    forward = f"♻️ <U>Переслал(а) сообщение от:</U> 👤 {forwarded_msg_author}"
                     link = True
 
         if msg_text != "" or msg_attaches != []:
@@ -71,6 +79,7 @@ def onmessage(client: Client, message: Message):
 
 <b>👤 {name}</b> ❌ <U>Удалил(а) сообщение:</U>
 
+<b>📜 Сообщение:</b> {msg_text}
 {f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
 {f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
@@ -83,6 +92,7 @@ def onmessage(client: Client, message: Message):
 
 <b>👤 {name}</b> ✒️ <U>'Изменил(а) сообщение:'</U>
 
+<b>📜 Сообщение:</b> {msg_text}
 {f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'if message.url else ""}
 {f'<b>🪛 Необработанные файлы:</b> {check_type(message)}' if check_type(message) else ""}""",
                         [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])

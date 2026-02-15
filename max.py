@@ -206,7 +206,7 @@ class MaxClient:
                 return
 
     def _heartbeat(self):
-        """Отправляет пинг серверу каждые 25 секунд"""
+        """Отправляет пинг серверу каждые 30 секунд"""
         while self._connected and not self._t_stop:
             try:
                 self.websocket.send(json.dumps({
@@ -266,7 +266,7 @@ class MaxClient:
 
                 case 128:
                     check_attaches = False
-                    if payload['message']['attaches'] and payload['message']['attaches'][0].get('event'):
+                    if (payload['message']['attaches'] and payload['message']['attaches'][0].get('event')):
                         check_attaches = True
                     if not check_attaches:
                         msg = Message(self, payload["chatId"], **payload["message"])
