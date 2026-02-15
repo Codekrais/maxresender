@@ -38,7 +38,7 @@ class Name:
 class Contact:
     def __init__(self, client, accountStatus = None, baseUrl = None, names = None, phone = None, description = None,
                  options = None, photoId = None, updateTime = None, id = None, baseRawUrl = None,
-                 gender = None, link = None, country = None):
+                 gender = None, link = None, country = None, webApp = None, menuButton = None):
         """
         Represents a contact with detailed profile information.
 
