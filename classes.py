@@ -102,8 +102,6 @@ class Chat:
 
         This class associates a chat with a client instance and its unique ID.
         """
-        if chat_id == 0:
-            return
         self._client = client
 
         self.id: int = chat_id

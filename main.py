@@ -138,6 +138,7 @@ def status_bot():
             try:
                 func(message)
             except Exception as e:
+                client_bot.disconnect()
                 bot.send_message(message.chat.id, f"Ошибка: {e}❌")
         return wrapper
 
@@ -262,8 +263,8 @@ def status_bot():
             recv = client_bot.get_user(phone=int(phone))
             if recv:
                 res = f"""<b>ПОЛЬЗОВАТЕЛЬ</b> {recv.contact.names[0].name}
-<b>CHAT_id</b> <code>{recv.chat.id}</code>
-<b>Ссылка</b> {recv.chat.link}"""
+<b>CHAT_ID</b> <code>{recv.chat.id}</code>"""
+
                 bot.send_message(message.chat.id, res)
             else: bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
             client_bot.disconnect()
