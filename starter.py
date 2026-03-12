@@ -19,10 +19,11 @@ def run_with_restart():
                 stderr=subprocess.PIPE,
                 text=True)
             process.wait()
+            stderr = process.communicate()
             exit_code = process.returncode
-            print(f"[{datetime.datetime.now()}] Скрипт упал (код: {exit_code}). Перезапуск через 3 секунды...")
+            print(f"""[{datetime.datetime.now()}] Скрипт упал (код: {exit_code}). Перезапуск через 3 секунды...""")
+            print(f"[{datetime.datetime.now()}]\n"+stderr[1])
             time.sleep(3)
-                
         except KeyboardInterrupt:
             print(f"\n[{datetime.datetime.now()}] Остановлено пользователем")
             if process:
