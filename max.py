@@ -420,6 +420,13 @@ class MaxClient:
         return self.me
 
     def get_chats(self,id:int) -> str:
+        """
+        This function return chat_name or user_name (if chat_id have "-")
+        Args:
+             id of chat
+        Example:
+            get_chats(1) -> url
+        """
         seq = self.seq #получает текущую секвенцию и добавляет 1 к основной
         if "-" in str(id):
             self.websocket.send(json.dumps({
@@ -937,6 +944,15 @@ class MaxClient:
         return func
 
     def download_file(self,chat_id: int, message_id: str, file_id: int) -> str:
+        """
+        This function return url for download file
+        Args:
+            file_id - id from JSON packet
+            chat_id - id from JSON packet
+            message_id - id from JSON packet
+        Example:
+             download_file(file_id=11111, chat_id=2222, message_id=3333) -> return url
+        """
         seq = self.seq
         self.websocket.send(json.dumps({
             "ver": 11,

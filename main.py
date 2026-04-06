@@ -92,7 +92,7 @@ def onmessage(client: Client, message: Message):
         if msg_text != "" or msg_attaches != []:
             match message.status:
                 case "REMOVED":
-                    send_to_telegram(
+                    threading.Thread(target= send_to_telegram, args = (
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
@@ -103,9 +103,9 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
                 case "EDITED":
-                    send_to_telegram(
+                    threading.Thread(target=send_to_telegram, args = (
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
@@ -116,9 +116,9 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
                 case _:
-                    send_to_telegram(
+                    threading.Thread(target=send_to_telegram,args = (
                         TG_BOT_TOKEN,
                         TG_CHAT_ID,
                         f"""
@@ -129,7 +129,7 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
+                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
 
 def status_bot():
     #---Обработчики--
