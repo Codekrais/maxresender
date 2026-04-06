@@ -9,6 +9,7 @@ import telebot
 import threading
 import os
 import json
+from datetime import datetime, timedelta, timezone
 
 
 load_dotenv()
@@ -263,7 +264,8 @@ def status_bot():
             recv = client_bot.get_user(phone=int(phone))
             if recv:
                 res = f"""<b>ПОЛЬЗОВАТЕЛЬ</b> {recv.contact.names[0].name}
-<b>CHAT_ID</b> <code>{recv.chat.id}</code>"""
+<b>CHAT_ID</b> <code>{recv.chat.id}</code>
+<b>ДАТА РЕГИСТРАЦИИ</b> {datetime.fromtimestamp(recv.contact.registrationTime/1000.0, tz=timezone(timedelta(hours=0))).strftime('%d-%m-%Y %H:%M:%S')}"""
 
                 bot.send_message(message.chat.id, res)
             else: bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
