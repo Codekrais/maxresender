@@ -8,6 +8,7 @@ from threading import Thread
 
 load_dotenv()
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
+debug = True
 def run_with_restart():
     restart_alarm = False
     while True:
@@ -22,7 +23,8 @@ def run_with_restart():
             stderr = process.communicate()
             exit_code = process.returncode
             print(f"""[{datetime.datetime.now()}] Скрипт упал (код: {exit_code}). Перезапуск через 3 секунды...""")
-            print(f"[{datetime.datetime.now()}]\n"+stderr[1])
+            if debug:
+                print(f"[{datetime.datetime.now()}]\n"+stderr[1])
             time.sleep(3)
         except KeyboardInterrupt:
             print(f"\n[{datetime.datetime.now()}] Остановлено пользователем")

@@ -38,7 +38,7 @@ class Name:
 class Contact:
     def __init__(self, client, accountStatus = None, baseUrl = None, names = None, phone = None, description = None,
                  options = None, photoId = None, updateTime = None, id = None, baseRawUrl = None,
-                 gender = None, link = None, country = None, webApp = None, menuButton = None, registrationTime=None):
+                 gender = None, link = None, **kwargs):
         """
         Represents a contact with detailed profile information.
 
@@ -58,7 +58,7 @@ class Contact:
         self.link = link
         self.gender = gender
         self.base_raw_url = baseRawUrl
-        self.registrationTime = registrationTime
+        self.registrationTime = kwargs.get("registrationTime")
     
     # region add()
     def add(self):
