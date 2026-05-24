@@ -1,1 +1,4 @@
-Nothing should be ignored based on the provided file changes. The modified files (`main.py` and `max.py`) are source code files that should not be added to .gitignore.
+```
+__pycache__/
+*.pyc
+```

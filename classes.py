@@ -81,12 +81,11 @@ class Chat:
         self._client = client
         self.id: int = chat_id
         self.link = f"https://web.max.ru/{chat_id}"
-
-        seq = client.seq
-        asyncio.create_task(self._init_messages(seq, chat_id))
         self.messages: list[Message] = []
 
     async def _init_messages(self, seq, chat_id):
+        if self._client.websocket is None:
+            return
         await self._client.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
@@ -152,11 +151,20 @@ class Message:
         self.attaches_forward = self.kwargs.get("link", {}).get("message", {}).get("attaches", [])
         self.reaction_info = kwargs.get("reactionInfo", {})
         self.user = client.get_user(id=sender, _f=1) if sender else None
-        self.chatname = client.get_chats(chatId) if chatId else ""
+        self.chatname = ""  # Будет заполнено асинхронно позже
         self._type = self.get_ftype()
         self.fileid = self.get_fileid()
-        self.url = client.download_file(chat_id=chatId, message_id=id, file_id=self.fileid) if self.fileid else None
-        self.add_in_chatlist(chatid=str(chatId), chatname=str(self.chatname)) if chatId != 0 else None
+        self.url = None  # Будет заполнено асинхронно позже
+        if chatId != 0:
+            self.add_in_chatlist(chatid=str(chatId), chatname="Unknown")
+    
+    async def init_async(self):
+        """Асинхронная инициализация сообщения"""
+        if self.chat.id:
+            self.chatname = await self._client.get_chats(self.chat.id)
+            self.add_in_chatlist(chatid=str(self.chat.id), chatname=str(self.chatname))
+        if self.fileid:
+            self.url = await self._client.download_file(chat_id=self.chat.id, message_id=self.id, file_id=self.fileid)
 
     def add_in_chatlist(self, chatid: str, chatname: str):
         with open('chatlist.json', encoding='UTF-8') as f:

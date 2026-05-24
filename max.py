@@ -121,13 +121,13 @@ class MaxClient:
                 user_agent_header="Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:135.0) Gecko/20100101 Firefox/135.0",
                 origin="https://web.max.ru"
         )
-        await await self.websocket.send(self.user_agent)
-        await await self.websocket.recv()
+        await self.websocket.send(self.user_agent)
+        await self.websocket.recv()
 
         if _f:
             return
 
-        await await self.websocket.send(json.dumps({
+        await self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
             "seq": self.seq,
@@ -143,7 +143,7 @@ class MaxClient:
             }
         }))
 
-        p = json.loads(await await self.websocket.recv())['payload']
+        p = json.loads(await self.websocket.recv())['payload']
         usr = User(self, p['profile']["contact"])
         self.me = usr
         self._connected = True
@@ -197,7 +197,7 @@ class MaxClient:
         for filter, func in self.handlers:
             if filter(self, msg):
                 if asyncio.iscoroutinefunction(func):
-                    await await func(self, msg)
+                    await func(self, msg)
                 else:
                     await func(self, msg)
                 return
@@ -206,7 +206,7 @@ class MaxClient:
         """Отправляет пинг серверу каждые 30 секунд"""
         while self._connected and not self._t_stop:
             try:
-                await await self.websocket.send(json.dumps({
+                await self.websocket.send(json.dumps({
                     "ver": 11,
                     "cmd": 0,
                     "seq": self.seq,
@@ -222,7 +222,7 @@ class MaxClient:
     async def _listener(self):
         while not self._t_stop:
             try:
-                recv = json.loads(await await self.websocket.recv())
+                recv = json.loads(await self.websocket.recv())
             except websockets.exceptions.ConnectionClosedError:
                 self._connected = False
                 try:
@@ -252,14 +252,14 @@ class MaxClient:
             match opcode:
 
                 case 1:
-                    await await self.websocket.send(json.dumps({
+                    await self.websocket.send(json.dumps({
                         "ver": 11,
                         "cmd": 0,
                         "seq": seq,
                         "opcode": 1,
                         "payload": {"interactive": False}
                     }))
-                    await await self.websocket.recv()
+                    await self.websocket.recv()
 
                 case 128:
                     check_attaches = False
@@ -295,6 +295,9 @@ class MaxClient:
         await self.connect()
         asyncio.create_task(self._listener())
         asyncio.create_task(self._heartbeat())
+        # Keep running until stopped
+        while not self._t_stop:
+            await asyncio.sleep(1)
     
     async def stop(self):
         """
@@ -335,7 +338,7 @@ class MaxClient:
         if self.is_log_in:
             raise ValueError("Client is logged in now")
         
-        await await self.websocket.send(json.dumps({
+        await self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
             "seq": self.seq,
@@ -347,11 +350,11 @@ class MaxClient:
             }
         }))
 
-        return json.loads(await await self.websocket.recv()) # experimental
+        return json.loads(await self.websocket.recv()) # experimental
     
     # region _check_code()
     async def _check_code(self, token, code) -> dict:
-        await await self.websocket.send(json.dumps({
+        await self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
             "seq": self.seq,
@@ -363,7 +366,7 @@ class MaxClient:
             }
         }))
 
-        token_resp = json.loads(await await self.websocket.recv())
+        token_resp = json.loads(await self.websocket.recv())
         payload = token_resp['payload']
         error = token_resp['payload'].get("error", None)
 
@@ -425,7 +428,7 @@ class MaxClient:
         """
         seq = self.seq #получает текущую секвенцию и добавляет 1 к основной
         if "-" in str(id):
-            await await self.websocket.send(json.dumps({
+            await self.websocket.send(json.dumps({
                 "ver": 11,
                 "cmd": 0,
                 "seq": seq,
@@ -435,7 +438,7 @@ class MaxClient:
                 }
             }))
             while True:
-                recv = json.loads(await await self.websocket.recv())
+                recv = json.loads(await self.websocket.recv())
                 if recv["seq"] != seq:
                     pass
                 else:
@@ -453,10 +456,10 @@ class MaxClient:
                     "contactIds": [chat_id]
                 }
             }
-            await await self.websocket.send(json.dumps(j))
+            await self.websocket.send(json.dumps(j))
 
             while True:
-                recv = json.loads(await await self.websocket.recv())
+                recv = json.loads(await self.websocket.recv())
                 if recv["seq"] != seq:
                     pass
                 else:
@@ -519,9 +522,9 @@ class MaxClient:
                 "type": "REPLY",
                 "messageId": str(reply_id)
             }
-        await await self.websocket.send(json.dumps(j))
+        await self.websocket.send(json.dumps(j))
         # while True:
-        #     recv = json.loads(await await self.websocket.recv())
+        #     recv = json.loads(await self.websocket.recv())
         #     if recv["seq"] != seq:
         #         pass
         #     else:
@@ -563,7 +566,7 @@ class MaxClient:
             await client.delete_message(12345678, ["1000120"], for_me=True)
             ```
         """
-        await await self.websocket.send(json.dumps({
+        await self.websocket.send(json.dumps({
             "ver":11,
             "cmd":0,
             "seq":self.seq,
@@ -601,7 +604,7 @@ class MaxClient:
             ```
         """
         seq = self.seq
-        await await self.websocket.send(json.dumps({
+        await self.websocket.send(json.dumps({
             "ver": 11,
             "cmd": 0,
             "seq": seq,
@@ -616,7 +619,7 @@ class MaxClient:
         }))
 
         while True:
-            recv = json.loads(await await self.websocket.recv())
+            recv = json.loads(await self.websocket.recv())
             if recv["seq"] != seq:
                 pass
             else:
@@ -643,7 +646,7 @@ class MaxClient:
                 }
             }
         }
-        await await self.websocket.send(json.dumps(j))
+        await self.websocket.send(json.dumps(j))
         return True
 
     # region unpin_chat()
@@ -663,7 +666,7 @@ class MaxClient:
                 }
             }
         }
-        await await self.websocket.send(json.dumps(j))
+        await self.websocket.send(json.dumps(j))
         return True
     
     # region get_user()
@@ -708,10 +711,10 @@ class MaxClient:
             j = {"ver":11,"cmd":0,"seq":seq,"opcode":32,"payload":{"contactIds":[id]}}
         else:
             raise ValueError("no `id` or `phone` or `chat_id` provided")
-        await await self.websocket.send(json.dumps(j))
+        await self.websocket.send(json.dumps(j))
 
         while True:
-            recv = json.loads(await await self.websocket.recv())
+            recv = json.loads(await self.websocket.recv())
             if recv["seq"] != seq:
                 pass
             else:
@@ -742,7 +745,7 @@ class MaxClient:
             "opcode":20,
             "payload":{}
         }
-        await await self.websocket.send(json.dumps(j))
+        await self.websocket.send(json.dumps(j))
         await self.disconnect()
         return True
     
@@ -888,7 +891,7 @@ class MaxClient:
         return True
                 
     # region @on_message()
-    async def on_message(self, filters):
+    def on_message(self, filters):
         """
         Decorator to register a handler for a specific message type.
 
@@ -903,11 +906,11 @@ class MaxClient:
         client = Client("token")
 
         @client.on_message(filters.command("hello"))
-        def command_hello(client: Client, message: Message):
-            message.reply("Max - самый забагованный мессенджер.")
+        async def command_hello(client: Client, message: Message):
+            await message.reply("Max - самый забагованный мессенджер.")
         # The decorated function will be called when the filter event occurs.
 
-        client.run()
+        asyncio.run(client.run())
         ```
         """
         def decorator(func):
@@ -917,7 +920,7 @@ class MaxClient:
         return decorator
     
     #region @on_connect
-    async def on_connect(self, func):
+    def on_connect(self, func):
         """
         Registers a callback function to be called upon successful connection.
 
@@ -933,7 +936,7 @@ class MaxClient:
         async def on_connect_handler():
             print("Connected!")
         # The function will be called automatically on connect.
-        client.run()
+        asyncio.run(client.run())
         ```
         """
         self._on_connect = func
@@ -970,7 +973,7 @@ class MaxClient:
         url = recv["payload"].get("url")
         return url
 
-    def download_video(self,chat_id: int, message_id: int, video_id: int) -> str:
+    async def download_video(self,chat_id: int, message_id: int, video_id: int) -> str:
         '''
         return invalid url
         '''
