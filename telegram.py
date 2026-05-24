@@ -1,44 +1,49 @@
-import time
-import requests, json
+import asyncio
+import aiohttp
+import json
 
-def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "", attachments: list[str] = []):
+async def send_to_telegram(session: aiohttp.ClientSession, TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "", attachments: list[str] = []):
     if not attachments:  # нет фоток — просто текст
         if caption == "": return
         api_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendMessage"
-        resp = requests.post(api_url, data={
-            "chat_id": TG_CHAT_ID, 
-            "text": caption, 
+        async with session.post(api_url, data={
+            "chat_id": TG_CHAT_ID,
+            "text": caption,
             "parse_mode": "HTML"
-            })
-        if get_pin():
-            message_id = resp.json()['result']['message_id']
-            pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
-            pin_resp = requests.post(pin_url, data={
-                "chat_id": TG_CHAT_ID,
-                "message_id": message_id,
-                "disable_notification": True  # Можно установить True, чтобы закреплять без уведомления
-            })
-        print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{resp.json()}\n')
+            }) as resp:
+            result = await resp.json()
+            if get_pin():
+                message_id = result['result']['message_id']
+                pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
+                async with session.post(pin_url, data={
+                    "chat_id": TG_CHAT_ID,
+                    "message_id": message_id,
+                    "disable_notification": True
+                }) as pin_resp:
+                    pass
+            print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{result}\n')
         return
 
     # одна фотка — отправляем через sendPhoto
     if len(attachments) == 1:
         api_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/sendPhoto"
-        resp = requests.post(api_url, data={
+        async with session.post(api_url, data={
             "chat_id": TG_CHAT_ID,
             "photo": attachments[0],
             "caption": caption,
             "parse_mode": "HTML"
-        })
-        if get_pin():
-            message_id = resp.json()['result']['message_id']
-            pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
-            pin_resp = requests.post(pin_url, data={
-                "chat_id": TG_CHAT_ID,
-                "message_id": message_id,
-                "disable_notification": True  # Можно установить True, чтобы закреплять без уведомления
-            })
-        print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{resp.json()}\n')
+        }) as resp:
+            result = await resp.json()
+            if get_pin():
+                message_id = result['result']['message_id']
+                pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
+                async with session.post(pin_url, data={
+                    "chat_id": TG_CHAT_ID,
+                    "message_id": message_id,
+                    "disable_notification": True
+                }) as pin_resp:
+                    pass
+            print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{result}\n')
         return
 
     # несколько фоток (от 2 до 10) — альбом
@@ -55,25 +60,28 @@ def send_to_telegram(TG_BOT_TOKEN: str="", TG_CHAT_ID: int = 0, caption: str = "
 
         payload = {
             "chat_id": TG_CHAT_ID,
-            "media": json.dumps(media),  # ⚔️ json.dumps обязателен
+            "media": json.dumps(media),
 
         }
-        resp = requests.post(api_url, data=payload)
-        print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{resp.json()}\n')
-        if get_pin():
-            message_id = resp.json()['result'][0]['message_id']
-            pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
-            pin_resp = requests.post(pin_url, data={
-                "chat_id": TG_CHAT_ID,
-                "message_id": message_id,
-                "disable_notification": True  # Можно установить True, чтобы закреплять без уведомления
-            })
+        async with session.post(api_url, data=payload) as resp:
+            result = await resp.json()
+            print(f'ПРИНЯТЫЙ ПАКЕТ TG\n{result}\n')
+            if get_pin():
+                message_id = result['result'][0]['message_id']
+                pin_url = f"https://api.telegram.org/bot{TG_BOT_TOKEN}/pinChatMessage"
+                async with session.post(pin_url, data={
+                    "chat_id": TG_CHAT_ID,
+                    "message_id": message_id,
+                    "disable_notification": True
+                }) as pin_resp:
+                    pass
         return
 
     # если фоток больше 10 — разобьём на несколько альбомов
     for i in range(0, len(attachments), 10):
         chunk = attachments[i:i+10]
-        send_to_telegram(TG_BOT_TOKEN, TG_CHAT_ID, caption if i == 0 else "", chunk)
+        await send_to_telegram(session, TG_BOT_TOKEN, TG_CHAT_ID, caption if i == 0 else "", chunk)
+
 def get_pin():
     with open('config.json', encoding='UTF-8') as f:
         data = json.load(f)

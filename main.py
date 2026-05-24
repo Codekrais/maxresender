@@ -3,38 +3,43 @@ from max_bot import MaxClientBot as Client_bot
 from filters import filters, user
 from classes import Message, get_chatlist
 from telegram import send_to_telegram
-import time, os
-from dotenv import load_dotenv
-import telebot
-import threading
+import asyncio
+import aiohttp
 import os
 import json
 from datetime import datetime, timedelta, timezone
+import telebot
+from telebot.async_telebot import AsyncTeleBot
 
 
+asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy()) if os.name == 'nt' else None
+
+load_dotenv = lambda: __import__('dotenv').load_dotenv()
 load_dotenv()
+
 MAX_TOKEN = os.getenv("MAX_TOKEN")
 MAX_CHAT_IDS = [int(x) for x in os.getenv("MAX_CHAT_IDS").split(",")]
 
 TG_BOT_TOKEN = os.getenv("TG_BOT_TOKEN")
 TG_CHAT_ID = os.getenv("TG_CHAT_ID")
 TG_ADMIN_ID = [x for x in os.getenv("TG_ADMIN_ID").split(",")]
-bot = telebot.TeleBot(TG_BOT_TOKEN, parse_mode="HTML")
-
+bot = AsyncTeleBot(TG_BOT_TOKEN, parse_mode="HTML")
 
 
 if MAX_TOKEN == "" or MAX_CHAT_IDS == [] or TG_BOT_TOKEN == "" or TG_CHAT_ID == "":
-    print("Ошибка в .env, перепроверьтье")
+    print("Ошибка в .env, перепроверьте")
 MONITOR_ID = os.getenv("MONITOR_ID")
 
 client = Client(MAX_TOKEN)
 client_bot = Client_bot(MAX_TOKEN)
+
 
 def check_file_type(message: Message) -> str:
     match message._type:
         case "VIDEO": return f'<b>🪛 Необработанные файлы:</b> Видеофайл'
         case "AUDIO": return f'<b>🪛 Необработанные файлы:</b> Аудиофайл'
         case _: return ""
+
 
 def get_forward_usr_name(message: Message) -> str:
     match message.forward_type:
@@ -43,12 +48,14 @@ def get_forward_usr_name(message: Message) -> str:
         case "CHANNEL":
             return message.kwargs["link"]["chatName"]
 
+
 def get_usr_name(message: Message) -> str:
     match message.type:
-        case "USER" :
+        case "USER":
             return message.user.contact.names[0].name
         case "CHANNEL":
             return "Администратор канала"
+
 
 def get_chatname(message: Message) -> str:
     match message.type:
@@ -57,6 +64,7 @@ def get_chatname(message: Message) -> str:
         case "CHANNEL":
             return f"<b>💬 Из канала \"{message.chatname}\"</b>:"
 
+
 def get_file_url(message: Message) -> str:
     if message.url:
         return f'\n<b>🔗 Файл по ссылке:</b> {message.url}\n'
@@ -64,24 +72,23 @@ def get_file_url(message: Message) -> str:
         return ""
 
 
-
 @client.on_connect
-def onconnect():
-    if client.me != None:
+async def onconnect():
+    if client.me is not None:
         print(f'[{client.current_time()}] Имя: {client.me.contact.names[0].name}, Номер: {client.me.contact.phone} | ID: {client.me.contact.id}\n')
 
 
 @client.on_message(filters.any())
-def onmessage(client: Client, message: Message):
+async def onmessage(client: Client, message: Message):
     forward = None
     link = False
-    if message.chat.id in MAX_CHAT_IDS: #Если добавить not, то тогда парсер будет исключать чат-id из списка тех, которые он парсит
+    if message.chat.id in MAX_CHAT_IDS:
         msg_text = message.text
         msg_attaches = message.attaches
         name = get_usr_name(message)
         if "link" in message.kwargs.keys():
             if "type" in message.kwargs["link"]:
-                if message.kwargs["link"]["type"] == "REPLY":  # TODO
+                if message.kwargs["link"]["type"] == "REPLY":
                     ...
                 if message.kwargs["link"]["type"] == "FORWARD":
                     msg_text = message.kwargs["link"]["message"]["text"]
@@ -91,12 +98,13 @@ def onmessage(client: Client, message: Message):
                     link = True
 
         if msg_text != "" or msg_attaches != []:
-            match message.status:
-                case "REMOVED":
-                    threading.Thread(target= send_to_telegram, args = (
-                        TG_BOT_TOKEN,
-                        TG_CHAT_ID,
-                        f"""
+            async with aiohttp.ClientSession() as session:
+                match message.status:
+                    case "REMOVED":
+                        await send_to_telegram(session,
+                            TG_BOT_TOKEN,
+                            TG_CHAT_ID,
+                            f"""
 {get_chatname(message)}
 
 <b>👤 {name}</b> ❌ <U>Удалил(а) сообщение:</U>
@@ -104,12 +112,12 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
-                case "EDITED":
-                    threading.Thread(target=send_to_telegram, args = (
-                        TG_BOT_TOKEN,
-                        TG_CHAT_ID,
-                        f"""
+                            [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
+                    case "EDITED":
+                        await send_to_telegram(session,
+                            TG_BOT_TOKEN,
+                            TG_CHAT_ID,
+                            f"""
 {get_chatname(message)}
 
 <b>👤 {name}</b> ✒️ <U>Изменил(а) сообщение:</U>
@@ -117,12 +125,12 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
-                case _:
-                    threading.Thread(target=send_to_telegram,args = (
-                        TG_BOT_TOKEN,
-                        TG_CHAT_ID,
-                        f"""
+                            [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
+                    case _:
+                        await send_to_telegram(session,
+                            TG_BOT_TOKEN,
+                            TG_CHAT_ID,
+                            f"""
 {get_chatname(message)}
 
 <b>👤 {name}</b> {forward if link else '📨 <U>Отправил(а) сообщение:</U>'}
@@ -130,44 +138,46 @@ def onmessage(client: Client, message: Message):
 <b>📜 Сообщение:</b> {msg_text}
 {get_file_url(message)}
 {check_file_type(message)}""",
-                        [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])).start()
+                            [attach['baseUrl'] for attach in msg_attaches if 'baseUrl' in attach])
 
-def status_bot():
-    #---Обработчики--
+
+async def status_bot():
+    # ---Обработчики--
     def errorHandler(func):
-        def wrapper(message):
+        async def wrapper(message):
             try:
-                func(message)
+                await func(message)
             except Exception as e:
-                client_bot.disconnect()
-                bot.send_message(message.chat.id, f"Ошибка: {e}❌")
+                await client_bot.disconnect()
+                await bot.send_message(message.chat.id, f"Ошибка: {e}❌")
         return wrapper
 
     def isAdmin(func):
-        def wrapper(message):
+        async def wrapper(message):
             global TG_ADMIN_ID
             if str(message.from_user.id) in TG_ADMIN_ID:
-                func(message)
+                await func(message)
             else:
-                bot.send_message(message.chat.id, "Вы не можете воспользоваться данной командой!❌")
-        return wrapper
-    def fstub(func): #заглушка
-        def wrapper(message):
-            if 1 == 1:
-                bot.send_message(message.chat.id, f"Функция на стадии разработки⏳")
+                await bot.send_message(message.chat.id, "Вы не можете воспользоваться данной командой!❌")
         return wrapper
 
-    #---Конец обработчиков---
+    def fstub(func):  # заглушка
+        async def wrapper(message):
+            if 1 == 1:
+                await bot.send_message(message.chat.id, f"Функция на стадии разработки⏳")
+        return wrapper
+
+    # ---Конец обработчиков---
 
     @bot.message_handler(commands=['status'])
     @errorHandler
-    def status(message):
-        bot.send_message(message.chat.id, 'Бот активен✅️')
+    async def status(message):
+        await bot.send_message(message.chat.id, 'Бот активен✅️')
 
     @bot.message_handler(commands=['start'])
     @errorHandler
-    def start(message):
-        bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
+    async def start(message):
+        await bot.send_message(message.chat.id, '''<b>MAX RESENDER BY KRAIS</b>
 
 Бот, пересылающий сообщения из мессенджера MAX в телеграм
 
@@ -186,32 +196,33 @@ def status_bot():
     @bot.message_handler(commands=['send'])
     @errorHandler
     @isAdmin
-    def send(message):
-        argument_list = message.text.split(" ") #Парсинг сообщения
+    async def send(message):
+        argument_list = message.text.split(" ")  # Парсинг сообщения
         if len(argument_list) < 3:
-            bot.send_message(message.chat.id, "Вы не ввели id или сообщение после /send❌")  # Если текст пустой
+            await bot.send_message(message.chat.id, "Вы не ввели id или сообщение после /send❌")
         else:
             max_chat_id = argument_list[1]
             message_body = " ".join(argument_list[2::])  # Текст после /send
 
             match int(max_chat_id):
                 case 0:
-                    bot.send_message(message.chat.id, "Отправка сообщения в этот чат невозможна!❌")
+                    await bot.send_message(message.chat.id, "Отправка сообщения в этот чат невозможна!❌")
                 case _:
-                    client_bot.run()
-                    recv = client_bot.send_message(chat_id=int(max_chat_id), text=message_body)
-                    #Отправка сообщения
+                    await client_bot.run()
+                    recv = await client_bot.send_message(chat_id=int(max_chat_id), text=message_body)
+                    # Отправка сообщения
                     if not recv:
-                        name = client_bot.get_chats(id=int(max_chat_id))
-                        bot.send_message(message.chat.id, f'Сообщение в чат <b>"{name.upper()}"</b> было успешно отправлено✅')
-                    else: bot.send_message(message.chat.id, f"При отправке сообщения произошла ошибка: {recv}❌")
+                        name = await client_bot.get_chats(id=int(max_chat_id))
+                        await bot.send_message(message.chat.id, f'Сообщение в чат <b>"{name.upper()}"</b> было успешно отправлено✅')
+                    else:
+                        await bot.send_message(message.chat.id, f"При отправке сообщения произошла ошибка: {recv}❌")
 
-                    client_bot.disconnect()
+                    await client_bot.disconnect()
 
     @bot.message_handler(commands=['com'])
     @errorHandler
-    def com(message):
-        bot.send_message(message.chat.id, """
+    async def com(message):
+        await bot.send_message(message.chat.id, """
 /start - стартовое сообщение
 
 /status - статус бота
@@ -230,59 +241,68 @@ def status_bot():
     @bot.message_handler(commands=['lschat'])
     @errorHandler
     @isAdmin
-    def ls(message):
+    async def ls(message):
         ls = get_chatlist()
         if ls:
-            bot.send_message(message.chat.id,f"""<b>СПИСОК ОБРАБОТАННЫХ ЧАТОВ:</b>
-            
+            await bot.send_message(message.chat.id, f"""<b>СПИСОК ОБРАБОТАННЫХ ЧАТОВ:</b>
+
 {ls}""")
-        else: bot.send_message(message.chat.id,f"Список обработанных чатов пуст!❌")
+        else:
+            await bot.send_message(message.chat.id, f"Список обработанных чатов пуст!❌")
 
     @bot.message_handler(commands=['pin'])
     @errorHandler
     @isAdmin
-    def pin(message):
+    async def pin(message):
         with open('config.json', encoding='UTF-8') as f:
             data = json.load(f)
         if data["pin"] == "True":
             data["pin"] = "False"
-            bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
+            await bot.send_message(message.chat.id, f"""Закрепление сообщений отключено!❌""")
         else:
             data["pin"] = "True"
-            bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
+            await bot.send_message(message.chat.id, f"""Закрепление сообщений включено!✅""")
         with open('config.json', 'w', encoding='UTF-8') as f:
             json.dump(data, f, ensure_ascii=False, indent=4)
 
     @bot.message_handler(commands=['max_id'])
     @errorHandler
     @isAdmin
-    def max_id(message):
+    async def max_id(message):
         message_body = message.text.split()
         if len(message_body) == 2:
             phone = message_body[1]
-            client_bot.run()
-            recv = client_bot.get_user(phone=int(phone))
+            await client_bot.run()
+            recv = await client_bot.get_user(phone=int(phone))
             if recv:
                 res = f"""<b>ПОЛЬЗОВАТЕЛЬ</b> {recv.contact.names[0].name}
 <b>CHAT_ID</b> <code>{recv.chat.id}</code>
-<b>ДАТА РЕГИСТРАЦИИ</b> {datetime.fromtimestamp(recv.contact.registrationTime/1000.0, tz=timezone(timedelta(hours=0))).strftime('%d-%m-%Y %H:%M:%S')}"""
+<b>ДАТА РЕГИСТРАЦИИ</b> {datetime.fromtimestamp(recv.contact.registrationTime / 1000.0, tz=timezone(timedelta(hours=0))).strftime('%d-%m-%Y %H:%M:%S')}"""
 
-                bot.send_message(message.chat.id, res)
-            else: bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
-            client_bot.disconnect()
-        else: bot.send_message(message.chat.id, "Вы не ввели номер‼️")
-
+                await bot.send_message(message.chat.id, res)
+            else:
+                await bot.send_message(message.chat.id, "Аккаунт по номеру телефона не найден⛔")
+            await client_bot.disconnect()
+        else:
+            await bot.send_message(message.chat.id, "Вы не ввели номер‼️")
 
     while True:
         try:
-            bot.delete_webhook(drop_pending_updates=True)
-            bot.polling(non_stop=True)
+            await bot.delete_webhook(drop_pending_updates=True)
+            await bot.polling(non_stop=True)
         except:
             print("Ошибка статус-бота")
-            time.sleep(10)
+            await asyncio.sleep(10)
             pass
 
 
+async def main():
+    await client.run()
+    asyncio.create_task(status_bot())
+    # Keep the event loop running
+    while True:
+        await asyncio.sleep(1)
+
+
 if __name__ == "__main__":
-    client.run()
-    threading.Thread(target=status_bot, daemon=True).start()
+    asyncio.run(main())
