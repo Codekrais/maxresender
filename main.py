@@ -12,7 +12,7 @@ import telebot
 from telebot.async_telebot import AsyncTeleBot
 
 
-asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy()) if os.name == 'nt' else None
+# Removed deprecated event loop policy setting for Python 3.14+
 
 load_dotenv = lambda: __import__('dotenv').load_dotenv()
 load_dotenv()
@@ -208,7 +208,7 @@ async def status_bot():
                 case 0:
                     await bot.send_message(message.chat.id, "Отправка сообщения в этот чат невозможна!❌")
                 case _:
-                    await client_bot.run()
+                    await await client_bot.run()
                     recv = await client_bot.send_message(chat_id=int(max_chat_id), text=message_body)
                     # Отправка сообщения
                     if not recv:
@@ -272,7 +272,7 @@ async def status_bot():
         message_body = message.text.split()
         if len(message_body) == 2:
             phone = message_body[1]
-            await client_bot.run()
+            await await client_bot.run()
             recv = await client_bot.get_user(phone=int(phone))
             if recv:
                 res = f"""<b>ПОЛЬЗОВАТЕЛЬ</b> {recv.contact.names[0].name}
@@ -297,7 +297,7 @@ async def status_bot():
 
 
 async def main():
-    await client.run()
+    await await client.run()
     asyncio.create_task(status_bot())
     # Keep the event loop running
     while True:
